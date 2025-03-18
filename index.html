@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Object Report Checklist</title>
+  <title>Device Checklist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <!-- iOS PWA Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#333">
   <!-- Simple styling -->
   <style>
     body {
@@ -65,6 +70,20 @@
       margin-left: 20px;
       font-size: 0.9em;
     }
+    /* Device count styling */
+    #deviceCount {
+      text-align: center;
+      font-size: 1.1em;
+      margin-bottom: 10px;
+    }
+    /* Order counter styling */
+    .orderCounter {
+      font-size: 0.8em;
+      margin-right: 5px;
+      color: #555;
+      width: 50px;
+      text-align: right;
+    }
   </style>
   <!-- Include PDF.js from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
@@ -74,17 +93,17 @@
   </script>
 </head>
 <body>
-  <h1>Object Report Checklist</h1>
+  <h1>Device Checklist</h1>
   <!-- Header info display -->
   <div id="headerInfo"></div>
 
   <div id="uploadSection">
-    <p>Select a PDF file containing device records:</p>
+    <p>Select a file containing device records:</p>
     <input type="file" id="pdfInput" accept="application/pdf">
   </div>
   <div id="loading"></div>
   
-  <!-- Controls: search, mark/clear all, clear session, and crossout toggle -->
+  <!-- Controls: search, mark/clear all, clear session, crossout, and counter toggle -->
   <div id="controls" style="display:none;">
     <input type="text" id="searchDevices" placeholder="Search devices...">
     <button id="markAllBtn">Mark All as Completed</button>
@@ -95,11 +114,18 @@
       <input type="checkbox" id="toggleCrossout">
       Enable Crossout
     </label>
+    <label>
+      <input type="checkbox" id="toggleCounter">
+      Display Counter
+    </label>
   </div>
 
   <h2>Device Checklist</h2>
+  <!-- Device count display -->
+  <div id="deviceCount"></div>
   <ul id="deviceList"></ul>
 
+  <!-- Main Script -->
   <script>
     // Global data structure for header and devices with their checked states.
     // Each device object: { text: string, checked: boolean }
@@ -108,8 +134,9 @@
       devices: []
     };
 
-    // Global flag for the crossout effect.
+    // Global flags for crossout and counter effects.
     let crossoutEnabled = false;
+    let counterEnabled = false;
 
     // Save the current checklist data to localStorage.
     function saveSession() {
@@ -193,30 +220,46 @@
       document.getElementById("headerInfo").textContent = header;
     }
 
-    // Render the device checklist.
+    // Render the device checklist and update the device count.
     function displayDevices(devices) {
       const deviceList = document.getElementById("deviceList");
       deviceList.innerHTML = ""; // Clear previous list.
+      
+      // Counter for checked devices
+      let checkedCounter = 0;
+      
       devices.forEach((device, index) => {
+        let orderHTML = "";
+        if (counterEnabled && device.checked) {
+          checkedCounter++;
+          orderHTML = `<span class="orderCounter">${checkedCounter}/${devices.length}</span>`;
+        } else if (counterEnabled) {
+          // Reserve space even if not checked (optional, you could leave this blank)
+          orderHTML = `<span class="orderCounter"></span>`;
+        }
+        
         const li = document.createElement("li");
         const isChecked = device.checked ? "checked" : "";
         // Apply line-through style if crossout is enabled and the device is checked.
         const textStyle = (crossoutEnabled && device.checked) ? "text-decoration: line-through;" : "";
-        li.innerHTML = `<input type="checkbox" id="device-${index}" ${isChecked}>
-                        <label for="device-${index}" style="${textStyle}">${device.text}</label>`;
+        
+        li.innerHTML = orderHTML +
+          `<input type="checkbox" id="device-${index}" ${isChecked}>` +
+          `<label for="device-${index}" style="${textStyle}">${device.text}</label>`;
+          
         // Save checkbox state on change and update the crossout effect.
         li.querySelector("input[type='checkbox']").addEventListener("change", function(e) {
           deviceChecklistData.devices[index].checked = e.target.checked;
           saveSession();
-          const label = li.querySelector("label");
-          if (crossoutEnabled && e.target.checked) {
-            label.style.textDecoration = "line-through";
-          } else {
-            label.style.textDecoration = "none";
-          }
+          // Re-render list to update order counters
+          displayDevices(deviceChecklistData.devices);
         });
         deviceList.appendChild(li);
       });
+      
+      // Update device count display.
+      document.getElementById("deviceCount").textContent = "Device Count: " + devices.length;
+      
       // Show controls if there are devices.
       if (devices.length > 0) {
         document.getElementById("controls").style.display = "block";
@@ -263,6 +306,12 @@
     // Toggle the crossout effect.
     document.getElementById("toggleCrossout").addEventListener("change", function(e) {
       crossoutEnabled = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Toggle the display of the order counter.
+    document.getElementById("toggleCounter").addEventListener("change", function(e) {
+      counterEnabled = e.target.checked;
       displayDevices(deviceChecklistData.devices);
     });
 
@@ -313,6 +362,19 @@
         displayDevices(deviceChecklistData.devices);
       }
     });
+
+    // Register Service Worker for PWA capabilities.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(function(error) {
+            console.log('ServiceWorker registration failed:', error);
+          });
+      });
+    }
   </script>
 </body>
 </html>
