@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Object Report Checklist</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Simple styling -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f2f2f2;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    #headerInfo {
+      text-align: center;
+      font-weight: bold;
+      margin: 20px auto;
+      padding: 10px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      max-width: 800px;
+    }
+    #uploadSection, #controls {
+      max-width: 600px;
+      margin: 20px auto;
+      text-align: center;
+    }
+    #deviceList {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0;
+      list-style: none;
+    }
+    #deviceList li {
+      background: #fff;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    #deviceList input[type="checkbox"] {
+      margin-right: 10px;
+    }
+    #loading {
+      text-align: center;
+      font-style: italic;
+    }
+    /* Controls styling */
+    #controls input[type="text"] {
+      padding: 5px;
+      width: 200px;
+      margin-right: 10px;
+    }
+    #controls button {
+      padding: 5px 10px;
+      margin: 5px;
+    }
+    #controls label {
+      margin-left: 20px;
+      font-size: 0.9em;
+    }
+  </style>
+  <!-- Include PDF.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script>
+    // Set up PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+  <h1>Object Report Checklist</h1>
+  <!-- Header info display -->
+  <div id="headerInfo"></div>
+
+  <div id="uploadSection">
+    <p>Select a PDF file containing device records:</p>
+    <input type="file" id="pdfInput" accept="application/pdf">
+  </div>
+  <div id="loading"></div>
+  
+  <!-- Controls: search, mark/clear all, clear session, and crossout toggle -->
+  <div id="controls" style="display:none;">
+    <input type="text" id="searchDevices" placeholder="Search devices...">
+    <button id="markAllBtn">Mark All as Completed</button>
+    <button id="clearAllBtn">Clear All</button>
+    <button id="clearSessionBtn">Clear Saved Session</button>
+    <br>
+    <label>
+      <input type="checkbox" id="toggleCrossout">
+      Enable Crossout
+    </label>
+  </div>
+
+  <h2>Device Checklist</h2>
+  <ul id="deviceList"></ul>
+
+  <script>
+    // Global data structure for header and devices with their checked states.
+    // Each device object: { text: string, checked: boolean }
+    let deviceChecklistData = {
+      header: "",
+      devices: []
+    };
+
+    // Global flag for the crossout effect.
+    let crossoutEnabled = false;
+
+    // Save the current checklist data to localStorage.
+    function saveSession() {
+      localStorage.setItem("deviceChecklist", JSON.stringify(deviceChecklistData));
+    }
+
+    // Load checklist data from localStorage, if available.
+    function loadSession() {
+      const data = localStorage.getItem("deviceChecklist");
+      if (data) {
+        deviceChecklistData = JSON.parse(data);
+        return true;
+      }
+      return false;
+    }
+
+    // Clear the saved session.
+    function clearSession() {
+      localStorage.removeItem("deviceChecklist");
+      deviceChecklistData = { header: "", devices: [] };
+    }
+
+    // Extract header and device records from raw PDF text.
+    function extractHeaderAndDevices(text) {
+      // Remove footer/header patterns like "Page X of Y"
+      text = text.replace(/Page \d+\s*of\s*\d+/gi, '');
+      // Split text into non-empty, trimmed lines.
+      let lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      
+      let header = "";
+      // Look for header info that starts with "Project".
+      if (lines.length >= 3 && lines[0].startsWith("Project")) {
+        header = lines[0] + " " + lines[1] + " " + lines[2];
+        if (lines[3] && lines[3].includes("Device Barcode Label")) {
+          lines = lines.slice(4);
+        } else {
+          lines = lines.slice(3);
+        }
+      }
+      // Otherwise, if first line contains unwanted header info.
+      else if (lines.length > 0 && lines[0].includes("Version :") && lines[0].includes("Device Barcode Label")) {
+        header = lines[0];
+        lines.shift();
+      }
+      
+      // Regular expression to match a serial number (e.g., "001:002:0001").
+      const serialRegex = /^\d{3}:\d{3}:\d{4}$/;
+      let rawDevices = [];
+      let currentDevice = [];
+      
+      // Group lines into devices; when a serial number is detected, finalize the device record.
+      lines.forEach(line => {
+        if (serialRegex.test(line)) {
+          currentDevice.push(line);
+          rawDevices.push(currentDevice.join(" "));
+          currentDevice = [];
+        } else {
+          currentDevice.push(line);
+        }
+      });
+      if (currentDevice.length > 0) {
+        rawDevices.push(currentDevice.join(" "));
+      }
+      
+      // Remove unwanted header text from the first device record if it begins with "Version :".
+      if (rawDevices.length > 0 && rawDevices[0].startsWith("Version :")) {
+        const headerKey = "Device Type LRM SLC System Address";
+        const idx = rawDevices[0].indexOf(headerKey);
+        if (idx !== -1) {
+          rawDevices[0] = rawDevices[0].substring(idx + headerKey.length).trim();
+        }
+      }
+      
+      // Map raw devices to device objects with an unchecked state.
+      let devices = rawDevices.map(text => ({ text: text, checked: false }));
+      return { header, devices };
+    }
+
+    // Display header information in the designated element.
+    function displayHeader(header) {
+      document.getElementById("headerInfo").textContent = header;
+    }
+
+    // Render the device checklist.
+    function displayDevices(devices) {
+      const deviceList = document.getElementById("deviceList");
+      deviceList.innerHTML = ""; // Clear previous list.
+      devices.forEach((device, index) => {
+        const li = document.createElement("li");
+        const isChecked = device.checked ? "checked" : "";
+        // Apply line-through style if crossout is enabled and the device is checked.
+        const textStyle = (crossoutEnabled && device.checked) ? "text-decoration: line-through;" : "";
+        li.innerHTML = `<input type="checkbox" id="device-${index}" ${isChecked}>
+                        <label for="device-${index}" style="${textStyle}">${device.text}</label>`;
+        // Save checkbox state on change and update the crossout effect.
+        li.querySelector("input[type='checkbox']").addEventListener("change", function(e) {
+          deviceChecklistData.devices[index].checked = e.target.checked;
+          saveSession();
+          const label = li.querySelector("label");
+          if (crossoutEnabled && e.target.checked) {
+            label.style.textDecoration = "line-through";
+          } else {
+            label.style.textDecoration = "none";
+          }
+        });
+        deviceList.appendChild(li);
+      });
+      // Show controls if there are devices.
+      if (devices.length > 0) {
+        document.getElementById("controls").style.display = "block";
+      }
+    }
+
+    // Search/filter functionality for device records.
+    document.getElementById("searchDevices").addEventListener("input", function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const listItems = document.querySelectorAll("#deviceList li");
+      listItems.forEach(item => {
+        if (item.textContent.toLowerCase().includes(searchTerm)) {
+          item.style.display = "";
+        } else {
+          item.style.display = "none";
+        }
+      });
+    });
+
+    // Mark all devices as completed.
+    document.getElementById("markAllBtn").addEventListener("click", function() {
+      deviceChecklistData.devices.forEach(device => device.checked = true);
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Clear all checkbox selections.
+    document.getElementById("clearAllBtn").addEventListener("click", function() {
+      deviceChecklistData.devices.forEach(device => device.checked = false);
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Button to clear the saved session (with confirmation).
+    document.getElementById("clearSessionBtn").addEventListener("click", function() {
+      if (confirm("Are you sure you want to clear the saved session? This will remove the current checklist.")) {
+        clearSession();
+        displayHeader("");
+        displayDevices([]);
+        document.getElementById("controls").style.display = "none";
+      }
+    });
+
+    // Toggle the crossout effect.
+    document.getElementById("toggleCrossout").addEventListener("change", function(e) {
+      crossoutEnabled = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Process PDF upload, extract devices, and update the session.
+    document.getElementById("pdfInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (!file || file.type !== "application/pdf") {
+        alert("Please upload a valid PDF file.");
+        return;
+      }
+      
+      document.getElementById("loading").textContent = "Loading PDF, please wait...";
+      const fileReader = new FileReader();
+      fileReader.onload = function() {
+        const typedarray = new Uint8Array(this.result);
+        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+          let pagesPromises = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            pagesPromises.push(pdf.getPage(i).then(page => page.getTextContent()));
+          }
+          Promise.all(pagesPromises).then(pages => {
+            let fullText = "";
+            pages.forEach(page => {
+              page.items.forEach(item => {
+                fullText += item.str + "\n";
+              });
+            });
+            const extracted = extractHeaderAndDevices(fullText);
+            deviceChecklistData.header = extracted.header;
+            deviceChecklistData.devices = extracted.devices;
+            saveSession();
+            displayHeader(deviceChecklistData.header);
+            displayDevices(deviceChecklistData.devices);
+            document.getElementById("loading").textContent = "";
+          });
+        }).catch(error => {
+          console.error("Error loading PDF: ", error);
+          document.getElementById("loading").textContent = "Error loading PDF.";
+        });
+      };
+      fileReader.readAsArrayBuffer(file);
+    });
+
+    // On page load, check for an existing session and load it.
+    window.addEventListener("load", function() {
+      if (loadSession()) {
+        displayHeader(deviceChecklistData.header);
+        displayDevices(deviceChecklistData.devices);
+      }
+    });
+  </script>
+</body>
+</html>
