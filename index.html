@@ -9,6 +9,7 @@
   <!-- iOS PWA Support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#333">
+
   <!-- Simple styling -->
   <style>
     body {
@@ -76,7 +77,7 @@
       font-size: 1.1em;
       margin-bottom: 10px;
     }
-    /* Order counter styling */
+    /* Order (countdown) styling */
     .orderCounter {
       font-size: 0.8em;
       margin-right: 5px;
@@ -85,30 +86,39 @@
       text-align: right;
     }
   </style>
+
   <!-- Include PDF.js from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
   <script>
+    "use strict";
     // Set up PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
   </script>
 </head>
 <body>
   <h1>Device Checklist</h1>
+
   <!-- Header info display -->
-  <div id="headerInfo"></div>
+  <div id="headerInfo" role="heading" aria-level="2"></div>
 
   <div id="uploadSection">
     <p>Select a file containing device records:</p>
-    <input type="file" id="pdfInput" accept="application/pdf">
+    <input type="file" id="pdfInput" accept="application/pdf" aria-label="Upload PDF file containing device records">
   </div>
-  <div id="loading"></div>
+
+  <div id="loading" aria-live="polite"></div>
   
-  <!-- Controls: search, mark/clear all, clear session, crossout, and counter toggle -->
+  <!-- Controls: search, mark/clear all, clear session, crossout, counter toggle, accidental touch -->
   <div id="controls" style="display:none;">
-    <input type="text" id="searchDevices" placeholder="Search devices...">
-    <button id="markAllBtn">Mark All as Completed</button>
-    <button id="clearAllBtn">Clear All</button>
-    <button id="clearSessionBtn">Clear Saved Session</button>
+    <input
+      type="text"
+      id="searchDevices"
+      placeholder="Search devices..."
+      aria-label="Search devices"
+    >
+    <button id="markAllBtn" aria-label="Mark all devices as completed">Mark All as Completed</button>
+    <button id="clearAllBtn" aria-label="Clear all device checkboxes">Clear All</button>
+    <button id="clearSessionBtn" aria-label="Clear saved session and reset data">Clear Saved Session</button>
     <br>
     <label>
       <input type="checkbox" id="toggleCrossout">
@@ -116,17 +126,24 @@
     </label>
     <label>
       <input type="checkbox" id="toggleCounter">
-      Display Counter
+      Display Countdown
+    </label>
+    <label title="Prevent unchecking of an already checked item.">
+      <input type="checkbox" id="toggleAccidentalTouch">
+      Accidental Touch
     </label>
   </div>
 
   <h2>Device Checklist</h2>
   <!-- Device count display -->
   <div id="deviceCount"></div>
-  <ul id="deviceList"></ul>
+  
+  <ul id="deviceList" role="list"></ul>
 
   <!-- Main Script -->
   <script>
+    "use strict";
+
     // Global data structure for header and devices with their checked states.
     // Each device object: { text: string, checked: boolean }
     let deviceChecklistData = {
@@ -134,16 +151,22 @@
       devices: []
     };
 
-    // Global flags for crossout and counter effects.
+    // Global flags
     let crossoutEnabled = false;
     let counterEnabled = false;
+    let accidentalTouchEnabled = false;
 
-    // Save the current checklist data to localStorage.
+    /**
+     * Save the current checklist data to localStorage.
+     */
     function saveSession() {
       localStorage.setItem("deviceChecklist", JSON.stringify(deviceChecklistData));
     }
 
-    // Load checklist data from localStorage, if available.
+    /**
+     * Load checklist data from localStorage, if available.
+     * @returns {boolean} true if session data was loaded, false otherwise
+     */
     function loadSession() {
       const data = localStorage.getItem("deviceChecklist");
       if (data) {
@@ -153,19 +176,29 @@
       return false;
     }
 
-    // Clear the saved session.
+    /**
+     * Clear the saved session entirely.
+     */
     function clearSession() {
       localStorage.removeItem("deviceChecklist");
       deviceChecklistData = { header: "", devices: [] };
     }
 
-    // Extract header and device records from raw PDF text.
+    /**
+     * Extract header and device records from raw PDF text.
+     * @param {string} text - The extracted raw text from the PDF
+     * @returns {object} - An object containing the header string and devices array
+     */
     function extractHeaderAndDevices(text) {
       // Remove footer/header patterns like "Page X of Y"
       text = text.replace(/Page \d+\s*of\s*\d+/gi, '');
+
       // Split text into non-empty, trimmed lines.
-      let lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      
+      let lines = text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
       let header = "";
       // Look for header info that starts with "Project".
       if (lines.length >= 3 && lines[0].startsWith("Project")) {
@@ -181,14 +214,14 @@
         header = lines[0];
         lines.shift();
       }
-      
+
       // Regular expression to match a serial number (e.g., "001:002:0001").
       const serialRegex = /^\d{3}:\d{3}:\d{4}$/;
       let rawDevices = [];
       let currentDevice = [];
-      
+
       // Group lines into devices; when a serial number is detected, finalize the device record.
-      lines.forEach(line => {
+      for (const line of lines) {
         if (serialRegex.test(line)) {
           currentDevice.push(line);
           rawDevices.push(currentDevice.join(" "));
@@ -196,11 +229,11 @@
         } else {
           currentDevice.push(line);
         }
-      });
+      }
       if (currentDevice.length > 0) {
         rawDevices.push(currentDevice.join(" "));
       }
-      
+
       // Remove unwanted header text from the first device record if it begins with "Version :".
       if (rawDevices.length > 0 && rawDevices[0].startsWith("Version :")) {
         const headerKey = "Device Type LRM SLC System Address";
@@ -209,64 +242,87 @@
           rawDevices[0] = rawDevices[0].substring(idx + headerKey.length).trim();
         }
       }
-      
+
       // Map raw devices to device objects with an unchecked state.
-      let devices = rawDevices.map(text => ({ text: text, checked: false }));
+      const devices = rawDevices.map(txt => ({ text: txt, checked: false }));
+
       return { header, devices };
     }
 
-    // Display header information in the designated element.
+    /**
+     * Display header information in the designated element.
+     * @param {string} header - Header text to display
+     */
     function displayHeader(header) {
       document.getElementById("headerInfo").textContent = header;
     }
 
-    // Render the device checklist and update the device count.
+    /**
+     * Render the device checklist and update the device count.
+     * @param {Array} devices - Array of device objects
+     */
     function displayDevices(devices) {
       const deviceList = document.getElementById("deviceList");
       deviceList.innerHTML = ""; // Clear previous list.
       
-      // Counter for checked devices
-      let checkedCounter = 0;
-      
+      const totalDevices = devices.length;
       devices.forEach((device, index) => {
+        // Countdown from the total number of devices
         let orderHTML = "";
-        if (counterEnabled && device.checked) {
-          checkedCounter++;
-          orderHTML = `<span class="orderCounter">${checkedCounter}/${devices.length}</span>`;
-        } else if (counterEnabled) {
-          // Reserve space even if not checked (optional, you could leave this blank)
-          orderHTML = `<span class="orderCounter"></span>`;
+        if (counterEnabled) {
+          const countdown = totalDevices - index; 
+          orderHTML = `<span class="orderCounter">${countdown}</span>`;
         }
-        
+
         const li = document.createElement("li");
+        li.setAttribute("role", "listitem");
+
         const isChecked = device.checked ? "checked" : "";
         // Apply line-through style if crossout is enabled and the device is checked.
-        const textStyle = (crossoutEnabled && device.checked) ? "text-decoration: line-through;" : "";
-        
-        li.innerHTML = orderHTML +
-          `<input type="checkbox" id="device-${index}" ${isChecked}>` +
+        const textStyle = (crossoutEnabled && device.checked)
+          ? "text-decoration: line-through;"
+          : "";
+
+        li.innerHTML = 
+          `${orderHTML}` +
+          `<input type="checkbox" id="device-${index}" ${isChecked} aria-label="Check device: ${device.text}">` +
           `<label for="device-${index}" style="${textStyle}">${device.text}</label>`;
           
-        // Save checkbox state on change and update the crossout effect.
+        // Handle checkbox changes, with accidental touch logic
         li.querySelector("input[type='checkbox']").addEventListener("change", function(e) {
-          deviceChecklistData.devices[index].checked = e.target.checked;
+          if (accidentalTouchEnabled) {
+            // If accidental touch is on:
+            //   - If the device is already checked, do not allow unchecking.
+            if (deviceChecklistData.devices[index].checked && !e.target.checked) {
+              e.target.checked = true; // revert it to checked
+            } else {
+              deviceChecklistData.devices[index].checked = e.target.checked;
+            }
+          } else {
+            // Normal behavior if accidental touch is off
+            deviceChecklistData.devices[index].checked = e.target.checked;
+          }
           saveSession();
-          // Re-render list to update order counters
           displayDevices(deviceChecklistData.devices);
         });
+
         deviceList.appendChild(li);
       });
-      
-      // Update device count display.
-      document.getElementById("deviceCount").textContent = "Device Count: " + devices.length;
-      
-      // Show controls if there are devices.
-      if (devices.length > 0) {
+
+      // Update device count display
+      document.getElementById("deviceCount").textContent = "Device Count: " + totalDevices;
+
+      // Show controls if there are devices
+      if (totalDevices > 0) {
         document.getElementById("controls").style.display = "block";
+      } else {
+        document.getElementById("controls").style.display = "none";
       }
     }
 
-    // Search/filter functionality for device records.
+    /**
+     * Initialize the search/filter functionality.
+     */
     document.getElementById("searchDevices").addEventListener("input", function(e) {
       const searchTerm = e.target.value.toLowerCase();
       const listItems = document.querySelectorAll("#deviceList li");
@@ -299,7 +355,6 @@
         clearSession();
         displayHeader("");
         displayDevices([]);
-        document.getElementById("controls").style.display = "none";
       }
     });
 
@@ -309,9 +364,15 @@
       displayDevices(deviceChecklistData.devices);
     });
 
-    // Toggle the display of the order counter.
+    // Toggle the simple countdown display.
     document.getElementById("toggleCounter").addEventListener("change", function(e) {
       counterEnabled = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Toggle the accidental touch feature.
+    document.getElementById("toggleAccidentalTouch").addEventListener("change", function(e) {
+      accidentalTouchEnabled = e.target.checked;
       displayDevices(deviceChecklistData.devices);
     });
 
@@ -323,34 +384,40 @@
         return;
       }
       
-      document.getElementById("loading").textContent = "Loading PDF, please wait...";
+      const loadingIndicator = document.getElementById("loading");
+      loadingIndicator.textContent = "Loading PDF, please wait...";
+
       const fileReader = new FileReader();
       fileReader.onload = function() {
         const typedarray = new Uint8Array(this.result);
-        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-          let pagesPromises = [];
-          for (let i = 1; i <= pdf.numPages; i++) {
-            pagesPromises.push(pdf.getPage(i).then(page => page.getTextContent()));
-          }
-          Promise.all(pagesPromises).then(pages => {
-            let fullText = "";
-            pages.forEach(page => {
-              page.items.forEach(item => {
-                fullText += item.str + "\n";
+        pdfjsLib.getDocument(typedarray).promise
+          .then(pdf => {
+            const pagesPromises = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+              pagesPromises.push(pdf.getPage(i).then(page => page.getTextContent()));
+            }
+            Promise.all(pagesPromises).then(pages => {
+              let fullText = "";
+              pages.forEach(page => {
+                page.items.forEach(item => {
+                  fullText += item.str + "\n";
+                });
               });
+
+              const extracted = extractHeaderAndDevices(fullText);
+              deviceChecklistData.header = extracted.header;
+              deviceChecklistData.devices = extracted.devices;
+
+              saveSession();
+              displayHeader(deviceChecklistData.header);
+              displayDevices(deviceChecklistData.devices);
+              loadingIndicator.textContent = "";
             });
-            const extracted = extractHeaderAndDevices(fullText);
-            deviceChecklistData.header = extracted.header;
-            deviceChecklistData.devices = extracted.devices;
-            saveSession();
-            displayHeader(deviceChecklistData.header);
-            displayDevices(deviceChecklistData.devices);
-            document.getElementById("loading").textContent = "";
+          })
+          .catch(error => {
+            console.error("Error loading PDF: ", error);
+            loadingIndicator.textContent = "Error loading PDF.";
           });
-        }).catch(error => {
-          console.error("Error loading PDF: ", error);
-          document.getElementById("loading").textContent = "Error loading PDF.";
-        });
       };
       fileReader.readAsArrayBuffer(file);
     });
