@@ -89,11 +89,13 @@
 
   <!-- Include PDF.js from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <!-- Set up PDF.js worker -->
   <script>
     "use strict";
-    // Set up PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
   </script>
+  <!-- Include SheetJS (xlsx) from CDN for Excel parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <h1>Device Checklist</h1>
@@ -103,8 +105,12 @@
 
   <div id="uploadSection">
     <p>Select one or more PDF files containing device records:</p>
-    <!-- Added 'multiple' to allow multiple file selection -->
+    <!-- PDF file input -->
     <input type="file" id="pdfInput" accept="application/pdf" multiple aria-label="Upload PDF files containing device records">
+    
+    <!-- New Excel file input -->
+    <p>Select one or more Excel files containing device records:</p>
+    <input type="file" id="excelInput" accept=".xlsx, .xls" multiple aria-label="Upload Excel files containing device records">
   </div>
 
   <div id="loading" aria-live="polite"></div>
@@ -407,6 +413,48 @@
       });
     }
 
+    /**
+     * New: Helper function to parse an Excel file.
+     * It reads rows starting at row 7, columns B through G, and creates device objects.
+     * @param {File} file - The Excel file uploaded by the user.
+     * @returns {Promise} - Resolves with an object { header, devices }
+     */
+    function parseExcel(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          // Use the first worksheet
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const devices = [];
+          let row = 7; // devices start at row 7
+          while (true) {
+            // Check if cell B(row) has a value
+            const cellB = worksheet["B" + row];
+            if (!cellB || cellB.v === undefined || cellB.v === null || cellB.v === "") {
+              break;
+            }
+            let deviceText = "";
+            // Concatenate cells from columns B through G (with a space separator)
+            ["B", "C", "D", "E", "F", "G"].forEach(col => {
+              const cell = worksheet[col + row];
+              if (cell && cell.v) {
+                deviceText += cell.v + " ";
+              }
+            });
+            devices.push({ text: deviceText.trim(), checked: false });
+            row++;
+          }
+          // For Excel files, header remains empty (or you could extract one if needed)
+          resolve({ header: "", devices });
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
     // Process one or more PDF uploads, extract devices, and update the session.
     document.getElementById("pdfInput").addEventListener("change", function(e) {
       const files = e.target.files;
@@ -451,6 +499,47 @@
         .catch(error => {
           console.error("Error loading PDFs: ", error);
           loadingIndicator.textContent = "Error loading one or more PDFs.";
+        });
+    });
+
+    // New: Process Excel file uploads, extract devices, and update the session.
+    document.getElementById("excelInput").addEventListener("change", function(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) {
+        alert("Please upload at least one valid Excel file.");
+        return;
+      }
+      
+      const loadingIndicator = document.getElementById("loading");
+      loadingIndicator.textContent = "Loading Excel file(s), please wait...";
+
+      const parsePromises = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Check file extension as an extra precaution
+        if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+          parsePromises.push(parseExcel(file));
+        }
+      }
+
+      Promise.all(parsePromises)
+        .then(results => {
+          results.forEach(extracted => {
+            if (!deviceChecklistData.header && extracted.header) {
+              deviceChecklistData.header = extracted.header;
+            }
+            if (extracted.devices && extracted.devices.length) {
+              deviceChecklistData.devices.push(...extracted.devices);
+            }
+          });
+          saveSession();
+          displayHeader(deviceChecklistData.header);
+          displayDevices(deviceChecklistData.devices);
+          loadingIndicator.textContent = "";
+        })
+        .catch(error => {
+          console.error("Error loading Excel files: ", error);
+          loadingIndicator.textContent = "Error loading one or more Excel files.";
         });
     });
 
