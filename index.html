@@ -102,8 +102,9 @@
   <div id="headerInfo" role="heading" aria-level="2"></div>
 
   <div id="uploadSection">
-    <p>Select a file containing device records:</p>
-    <input type="file" id="pdfInput" accept="application/pdf" aria-label="Upload PDF file containing device records">
+    <p>Select one or more PDF files containing device records:</p>
+    <!-- Added 'multiple' to allow multiple file selection -->
+    <input type="file" id="pdfInput" accept="application/pdf" multiple aria-label="Upload PDF files containing device records">
   </div>
 
   <div id="loading" aria-live="polite"></div>
@@ -294,7 +295,7 @@
             // If accidental touch is on:
             //   - If the device is already checked, do not allow unchecking.
             if (deviceChecklistData.devices[index].checked && !e.target.checked) {
-              e.target.checked = true; // revert it to checked
+              e.target.checked = true; // revert to checked
             } else {
               deviceChecklistData.devices[index].checked = e.target.checked;
             }
@@ -376,50 +377,81 @@
       displayDevices(deviceChecklistData.devices);
     });
 
-    // Process PDF upload, extract devices, and update the session.
+    /**
+     * Helper function: reads and parses a single PDF file, returning { header, devices }.
+     */
+    function parsePDF(file) {
+      return new Promise((resolve, reject) => {
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+          const typedarray = new Uint8Array(this.result);
+          pdfjsLib.getDocument(typedarray).promise
+            .then(pdf => {
+              const pagesPromises = [];
+              for (let i = 1; i <= pdf.numPages; i++) {
+                pagesPromises.push(pdf.getPage(i).then(page => page.getTextContent()));
+              }
+              Promise.all(pagesPromises).then(pages => {
+                let fullText = "";
+                pages.forEach(page => {
+                  page.items.forEach(item => {
+                    fullText += item.str + "\n";
+                  });
+                });
+                resolve(extractHeaderAndDevices(fullText));
+              }).catch(err => reject(err));
+            })
+            .catch(error => reject(error));
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    // Process one or more PDF uploads, extract devices, and update the session.
     document.getElementById("pdfInput").addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      if (!file || file.type !== "application/pdf") {
-        alert("Please upload a valid PDF file.");
+      const files = e.target.files;
+      if (!files || files.length === 0) {
+        alert("Please upload at least one valid PDF file.");
         return;
       }
       
       const loadingIndicator = document.getElementById("loading");
-      loadingIndicator.textContent = "Loading PDF, please wait...";
+      loadingIndicator.textContent = "Loading PDF(s), please wait...";
 
-      const fileReader = new FileReader();
-      fileReader.onload = function() {
-        const typedarray = new Uint8Array(this.result);
-        pdfjsLib.getDocument(typedarray).promise
-          .then(pdf => {
-            const pagesPromises = [];
-            for (let i = 1; i <= pdf.numPages; i++) {
-              pagesPromises.push(pdf.getPage(i).then(page => page.getTextContent()));
-            }
-            Promise.all(pagesPromises).then(pages => {
-              let fullText = "";
-              pages.forEach(page => {
-                page.items.forEach(item => {
-                  fullText += item.str + "\n";
-                });
-              });
+      // Build a list of promises to parse each selected PDF
+      const parsePromises = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Skip any non-PDF files if user selects them by mistake
+        if (file.type === "application/pdf") {
+          parsePromises.push(parsePDF(file));
+        }
+      }
 
-              const extracted = extractHeaderAndDevices(fullText);
+      // When all PDFs are done parsing:
+      Promise.all(parsePromises)
+        .then(results => {
+          // results is an array of { header, devices } from each PDF
+          results.forEach(extracted => {
+            // If there's no header set yet, use the first PDF's header
+            if (!deviceChecklistData.header && extracted.header) {
               deviceChecklistData.header = extracted.header;
-              deviceChecklistData.devices = extracted.devices;
-
-              saveSession();
-              displayHeader(deviceChecklistData.header);
-              displayDevices(deviceChecklistData.devices);
-              loadingIndicator.textContent = "";
-            });
-          })
-          .catch(error => {
-            console.error("Error loading PDF: ", error);
-            loadingIndicator.textContent = "Error loading PDF.";
+            }
+            // Append new devices to the existing list
+            if (extracted.devices && extracted.devices.length) {
+              deviceChecklistData.devices.push(...extracted.devices);
+            }
           });
-      };
-      fileReader.readAsArrayBuffer(file);
+
+          saveSession();
+          displayHeader(deviceChecklistData.header);
+          displayDevices(deviceChecklistData.devices);
+          loadingIndicator.textContent = "";
+        })
+        .catch(error => {
+          console.error("Error loading PDFs: ", error);
+          loadingIndicator.textContent = "Error loading one or more PDFs.";
+        });
     });
 
     // On page load, check for an existing session and load it.
