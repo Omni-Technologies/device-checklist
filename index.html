@@ -266,18 +266,35 @@
 
     /**
      * Render the device checklist and update the device count.
+     * This function applies the search filter if any text is in the search bar.
      * @param {Array} devices - Array of device objects
      */
     function displayDevices(devices) {
+      // Get the current search term from the search input.
+      const searchTerm = document.getElementById("searchDevices").value.toLowerCase();
+      // Create a filtered list including each device and its original index.
+      const filteredDevices = [];
+      devices.forEach((device, index) => {
+        if (!searchTerm || device.text.toLowerCase().includes(searchTerm)) {
+          filteredDevices.push({ device, index });
+        }
+      });
+
       const deviceList = document.getElementById("deviceList");
       deviceList.innerHTML = ""; // Clear previous list.
-      
-      const totalDevices = devices.length;
-      devices.forEach((device, index) => {
-        // Countdown from the total number of devices
+
+      // Update device count display to show filtered devices.
+      document.getElementById("deviceCount").textContent = "Device Count: " + filteredDevices.length;
+
+      // Iterate over filtered devices and render each.
+      filteredDevices.forEach((item, displayIndex) => {
+        const device = item.device;
+        const index = item.index;
+        
+        // Optional: Countdown from the total number of filtered devices.
         let orderHTML = "";
         if (counterEnabled) {
-          const countdown = totalDevices - index; 
+          const countdown = filteredDevices.length - displayIndex;
           orderHTML = `<span class="orderCounter">${countdown}</span>`;
         }
 
@@ -290,56 +307,40 @@
           ? "text-decoration: line-through;"
           : "";
 
-        li.innerHTML = 
+        li.innerHTML =
           `${orderHTML}` +
           `<input type="checkbox" id="device-${index}" ${isChecked} aria-label="Check device: ${device.text}">` +
           `<label for="device-${index}" style="${textStyle}">${device.text}</label>`;
-          
-        // Handle checkbox changes, with accidental touch logic
+
+        // Handle checkbox changes (using the original device index).
         li.querySelector("input[type='checkbox']").addEventListener("change", function(e) {
           if (accidentalTouchEnabled) {
-            // If accidental touch is on:
-            //   - If the device is already checked, do not allow unchecking.
             if (deviceChecklistData.devices[index].checked && !e.target.checked) {
-              e.target.checked = true; // revert to checked
+              e.target.checked = true; // Prevent unchecking if accidental touch is enabled.
             } else {
               deviceChecklistData.devices[index].checked = e.target.checked;
             }
           } else {
-            // Normal behavior if accidental touch is off
             deviceChecklistData.devices[index].checked = e.target.checked;
           }
           saveSession();
+          // Re-render the list; the filtering is applied inside displayDevices.
           displayDevices(deviceChecklistData.devices);
         });
 
         deviceList.appendChild(li);
       });
 
-      // Update device count display
-      document.getElementById("deviceCount").textContent = "Device Count: " + totalDevices;
-
-      // Show controls if there are devices
-      if (totalDevices > 0) {
-        document.getElementById("controls").style.display = "block";
-      } else {
-        document.getElementById("controls").style.display = "none";
-      }
+      // Show or hide controls based on whether there are any devices loaded.
+      document.getElementById("controls").style.display = (devices.length > 0) ? "block" : "none";
     }
 
     /**
      * Initialize the search/filter functionality.
+     * Re-render the devices whenever the search input changes.
      */
     document.getElementById("searchDevices").addEventListener("input", function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const listItems = document.querySelectorAll("#deviceList li");
-      listItems.forEach(item => {
-        if (item.textContent.toLowerCase().includes(searchTerm)) {
-          item.style.display = "";
-        } else {
-          item.style.display = "none";
-        }
-      });
+      displayDevices(deviceChecklistData.devices);
     });
 
     // Mark all devices as completed.
@@ -414,7 +415,7 @@
     }
 
     /**
-     * New: Helper function to parse an Excel file.
+     * Helper function to parse an Excel file.
      * It reads rows starting at row 7, columns B through G, and creates device objects.
      * @param {File} file - The Excel file uploaded by the user.
      * @returns {Promise} - Resolves with an object { header, devices }
@@ -425,19 +426,19 @@
         reader.onload = function(e) {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          // Use the first worksheet
+          // Use the first worksheet.
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
           const devices = [];
-          let row = 7; // devices start at row 7
+          let row = 7; // devices start at row 7.
           while (true) {
-            // Check if cell B(row) has a value
+            // Check if cell B(row) has a value.
             const cellB = worksheet["B" + row];
             if (!cellB || cellB.v === undefined || cellB.v === null || cellB.v === "") {
               break;
             }
             let deviceText = "";
-            // Concatenate cells from columns B through G (with a space separator)
+            // Concatenate cells from columns B through G (with a space separator).
             ["B", "C", "D", "E", "F", "G"].forEach(col => {
               const cell = worksheet[col + row];
               if (cell && cell.v) {
@@ -447,7 +448,7 @@
             devices.push({ text: deviceText.trim(), checked: false });
             row++;
           }
-          // For Excel files, header remains empty (or you could extract one if needed)
+          // For Excel files, header remains empty (or you could extract one if needed).
           resolve({ header: "", devices });
         };
         reader.onerror = reject;
@@ -466,11 +467,11 @@
       const loadingIndicator = document.getElementById("loading");
       loadingIndicator.textContent = "Loading PDF(s), please wait...";
 
-      // Build a list of promises to parse each selected PDF
+      // Build a list of promises to parse each selected PDF.
       const parsePromises = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        // Skip any non-PDF files if user selects them by mistake
+        // Skip any non-PDF files if user selects them by mistake.
         if (file.type === "application/pdf") {
           parsePromises.push(parsePDF(file));
         }
@@ -479,13 +480,13 @@
       // When all PDFs are done parsing:
       Promise.all(parsePromises)
         .then(results => {
-          // results is an array of { header, devices } from each PDF
+          // results is an array of { header, devices } from each PDF.
           results.forEach(extracted => {
-            // If there's no header set yet, use the first PDF's header
+            // If there's no header set yet, use the first PDF's header.
             if (!deviceChecklistData.header && extracted.header) {
               deviceChecklistData.header = extracted.header;
             }
-            // Append new devices to the existing list
+            // Append new devices to the existing list.
             if (extracted.devices && extracted.devices.length) {
               deviceChecklistData.devices.push(...extracted.devices);
             }
@@ -502,7 +503,7 @@
         });
     });
 
-    // New: Process Excel file uploads, extract devices, and update the session.
+    // Process Excel file uploads, extract devices, and update the session.
     document.getElementById("excelInput").addEventListener("change", function(e) {
       const files = e.target.files;
       if (!files || files.length === 0) {
@@ -516,7 +517,7 @@
       const parsePromises = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        // Check file extension as an extra precaution
+        // Check file extension as an extra precaution.
         if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
           parsePromises.push(parseExcel(file));
         }
