@@ -111,6 +111,11 @@
     <!-- New Excel file input -->
     <p>Select one or more Excel files containing device records:</p>
     <input type="file" id="excelInput" accept=".xlsx, .xls" multiple aria-label="Upload Excel files containing device records">
+    
+    <!-- Always-visible Export/Import for sharing device checklist -->
+    <p>Import / Export Device Checklist:</p>
+    <button id="exportFileBtn" aria-label="Export the checklist as a JSON file">Export to File</button>
+    <button id="importFileBtn" aria-label="Import a checklist JSON file">Import from File</button>
   </div>
 
   <div id="loading" aria-live="polite"></div>
@@ -270,28 +275,30 @@
      * @param {Array} devices - Array of device objects
      */
     function displayDevices(devices) {
-      // Get the current search term from the search input.
+      // Get the current search term from the search input
       const searchTerm = document.getElementById("searchDevices").value.toLowerCase();
-      // Create a filtered list including each device and its original index.
-      const filteredDevices = [];
-      devices.forEach((device, index) => {
-        if (!searchTerm || device.text.toLowerCase().includes(searchTerm)) {
-          filteredDevices.push({ device, index });
-        }
-      });
+
+      // Filter devices based on the search term
+      const filteredDevices = devices
+        .map((device, index) => ({ device, index }))
+        .filter(item => {
+          return (!searchTerm ||
+                  item.device.text.toLowerCase().includes(searchTerm));
+        });
 
       const deviceList = document.getElementById("deviceList");
-      deviceList.innerHTML = ""; // Clear previous list.
+      deviceList.innerHTML = ""; // Clear previous list
 
-      // Update device count display to show filtered devices.
-      document.getElementById("deviceCount").textContent = "Device Count: " + filteredDevices.length;
+      // Update device count display to show filtered devices
+      document.getElementById("deviceCount").textContent =
+        "Device Count: " + filteredDevices.length;
 
-      // Iterate over filtered devices and render each.
+      // Iterate over filtered devices and render each
       filteredDevices.forEach((item, displayIndex) => {
         const device = item.device;
         const index = item.index;
         
-        // Optional: Countdown from the total number of filtered devices.
+        // Optional: Countdown from the total number of filtered devices
         let orderHTML = "";
         if (counterEnabled) {
           const countdown = filteredDevices.length - displayIndex;
@@ -302,21 +309,22 @@
         li.setAttribute("role", "listitem");
 
         const isChecked = device.checked ? "checked" : "";
-        // Apply line-through style if crossout is enabled and the device is checked.
+        // Apply line-through style if crossout is enabled and the device is checked
         const textStyle = (crossoutEnabled && device.checked)
           ? "text-decoration: line-through;"
           : "";
 
         li.innerHTML =
-          `${orderHTML}` +
-          `<input type="checkbox" id="device-${index}" ${isChecked} aria-label="Check device: ${device.text}">` +
-          `<label for="device-${index}" style="${textStyle}">${device.text}</label>`;
+          `${orderHTML}
+           <input type="checkbox" id="device-${index}" ${isChecked} aria-label="Check device: ${device.text}">
+           <label for="device-${index}" style="${textStyle}">${device.text}</label>`;
 
-        // Handle checkbox changes (using the original device index).
+        // Handle checkbox changes (using the original device index)
         li.querySelector("input[type='checkbox']").addEventListener("change", function(e) {
           if (accidentalTouchEnabled) {
+            // If "accidental touch" is on, don't allow unchecking a previously checked device
             if (deviceChecklistData.devices[index].checked && !e.target.checked) {
-              e.target.checked = true; // Prevent unchecking if accidental touch is enabled.
+              e.target.checked = true;
             } else {
               deviceChecklistData.devices[index].checked = e.target.checked;
             }
@@ -324,65 +332,68 @@
             deviceChecklistData.devices[index].checked = e.target.checked;
           }
           saveSession();
-          // Re-render the list; the filtering is applied inside displayDevices.
+          // Re-render the list to reflect any crossout or countdown changes
           displayDevices(deviceChecklistData.devices);
         });
 
         deviceList.appendChild(li);
       });
 
-      // Show or hide controls based on whether there are any devices loaded.
+      // Show or hide controls based on whether there are any devices loaded
       document.getElementById("controls").style.display = (devices.length > 0) ? "block" : "none";
     }
 
     /**
-     * Initialize the search/filter functionality.
-     * Re-render the devices whenever the search input changes.
+     * EXPORT - Let the user download the entire checklist as a JSON file.
      */
-    document.getElementById("searchDevices").addEventListener("input", function(e) {
-      displayDevices(deviceChecklistData.devices);
-    });
+    function exportListToFile() {
+      // Convert data to a JSON string; pretty-print with 2 spaces for readability
+      const dataStr = JSON.stringify(deviceChecklistData, null, 2);
 
-    // Mark all devices as completed.
-    document.getElementById("markAllBtn").addEventListener("click", function() {
-      deviceChecklistData.devices.forEach(device => device.checked = true);
-      saveSession();
-      displayDevices(deviceChecklistData.devices);
-    });
+      // Create a Blob from the JSON
+      const blob = new Blob([dataStr], { type: 'application/json' });
 
-    // Clear all checkbox selections.
-    document.getElementById("clearAllBtn").addEventListener("click", function() {
-      deviceChecklistData.devices.forEach(device => device.checked = false);
-      saveSession();
-      displayDevices(deviceChecklistData.devices);
-    });
+      // Create a temporary <a> link and use URL.createObjectURL to download the file
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'device-checklist.json'; // The file name
+      link.click();
 
-    // Button to clear the saved session (with confirmation).
-    document.getElementById("clearSessionBtn").addEventListener("click", function() {
-      if (confirm("Are you sure you want to clear the saved session? This will remove the current checklist.")) {
-        clearSession();
-        displayHeader("");
-        displayDevices([]);
+      // Clean up the URL object
+      URL.revokeObjectURL(url);
+    }
+
+    /**
+     * IMPORT - Load a .json checklist file that the user has.
+     */
+    function importListFromFile(event) {
+      const file = event.target.files[0];
+      if (!file) return; // user canceled or didn't choose a file
+
+      if (!file.name.toLowerCase().endsWith('.json')) {
+        alert("Please select a .json file.");
+        return;
       }
-    });
 
-    // Toggle the crossout effect.
-    document.getElementById("toggleCrossout").addEventListener("change", function(e) {
-      crossoutEnabled = e.target.checked;
-      displayDevices(deviceChecklistData.devices);
-    });
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          // Overwrite current data
+          deviceChecklistData = importedData;
 
-    // Toggle the simple countdown display.
-    document.getElementById("toggleCounter").addEventListener("change", function(e) {
-      counterEnabled = e.target.checked;
-      displayDevices(deviceChecklistData.devices);
-    });
-
-    // Toggle the accidental touch feature.
-    document.getElementById("toggleAccidentalTouch").addEventListener("change", function(e) {
-      accidentalTouchEnabled = e.target.checked;
-      displayDevices(deviceChecklistData.devices);
-    });
+          // Save & re-render
+          saveSession();
+          displayHeader(deviceChecklistData.header);
+          displayDevices(deviceChecklistData.devices);
+          alert("Successfully imported the checklist from file!");
+        } catch (err) {
+          alert("Invalid JSON file. Could not import.");
+        }
+      };
+      reader.readAsText(file);
+    }
 
     /**
      * Helper function: reads and parses a single PDF file, returning { header, devices }.
@@ -455,6 +466,89 @@
         reader.readAsArrayBuffer(file);
       });
     }
+
+    // Mark all devices as completed.
+    document.getElementById("markAllBtn").addEventListener("click", function() {
+      deviceChecklistData.devices.forEach(device => device.checked = true);
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Clear all checkbox selections.
+    document.getElementById("clearAllBtn").addEventListener("click", function() {
+      deviceChecklistData.devices.forEach(device => device.checked = false);
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Button to clear the saved session (with confirmation).
+    document.getElementById("clearSessionBtn").addEventListener("click", function() {
+      if (confirm("Are you sure you want to clear the saved session? This will remove the current checklist.")) {
+        clearSession();
+        displayHeader("");
+        displayDevices([]);
+      }
+    });
+
+    // Toggle the crossout effect.
+    document.getElementById("toggleCrossout").addEventListener("change", function(e) {
+      crossoutEnabled = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Toggle the simple countdown display.
+    document.getElementById("toggleCounter").addEventListener("change", function(e) {
+      counterEnabled = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Toggle the accidental touch feature.
+    document.getElementById("toggleAccidentalTouch").addEventListener("change", function(e) {
+      accidentalTouchEnabled = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // Listen for typing in the Search box & update in real-time
+    document.getElementById("searchDevices").addEventListener("input", function() {
+      displayDevices(deviceChecklistData.devices);
+    });
+
+    // On page load, check for an existing session and load it.
+    window.addEventListener("load", function() {
+      if (loadSession()) {
+        displayHeader(deviceChecklistData.header);
+        displayDevices(deviceChecklistData.devices);
+      }
+    });
+
+    // Register Service Worker for PWA capabilities.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(function(error) {
+            console.log('ServiceWorker registration failed:', error);
+          });
+      });
+    }
+
+    // Attach event listeners to Export/Import file buttons
+    document.getElementById('exportFileBtn').addEventListener('click', exportListToFile);
+
+    // We'll add a hidden <input type="file"> for the import flow, triggered by the button
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', importListFromFile);
+    document.body.appendChild(fileInput);
+
+    document.getElementById('importFileBtn').addEventListener('click', () => {
+      fileInput.value = ''; // reset so user can pick a file each time
+      fileInput.click();
+    });
 
     // Process one or more PDF uploads, extract devices, and update the session.
     document.getElementById("pdfInput").addEventListener("change", function(e) {
@@ -543,27 +637,6 @@
           loadingIndicator.textContent = "Error loading one or more Excel files.";
         });
     });
-
-    // On page load, check for an existing session and load it.
-    window.addEventListener("load", function() {
-      if (loadSession()) {
-        displayHeader(deviceChecklistData.header);
-        displayDevices(deviceChecklistData.devices);
-      }
-    });
-
-    // Register Service Worker for PWA capabilities.
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(function(registration) {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(function(error) {
-            console.log('ServiceWorker registration failed:', error);
-          });
-      });
-    }
   </script>
 </body>
 </html>
