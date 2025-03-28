@@ -10,7 +10,9 @@
   <meta name="theme-color" content="#333">
 
   <style>
-    /* --- Minimal polished styling, unchanged except for removal of #topBarProjectTitle --- */
+    /* ==============================
+       Base / Global
+       ============================== */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -20,7 +22,7 @@
       font-family: Arial, sans-serif;
       background: #f9f9f9;
       color: #333;
-      margin-top: 150px;
+      margin-top: 70px; /* keeps room for the fixed header */
       line-height: 1.4;
     }
     h1 {
@@ -28,15 +30,21 @@
       color: #222;
       margin-bottom: 10px;
     }
+
+    /* ==============================
+       Fixed Top Bar
+       ============================== */
     #fixedTopBar {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
-      background: #2c3e50;
+      /* Maroon background */
+      background: #800000;
       color: #fff;
       z-index: 9999;
-      border-bottom: 1px solid #1f2c38;
+      /* Maroon-ish darker border */
+      border-bottom: 1px solid #650000;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       padding: 10px 0;
     }
@@ -54,8 +62,10 @@
       flex: 0 0 auto;
       margin-right: 20px;
     }
-    /* Removed the #topBarProjectTitle block entirely */
 
+    /* ==============================
+       Top Bar Inputs / Buttons
+       ============================== */
     #searchDevices {
       flex: 0 1 auto;
       max-width: 150px;
@@ -65,12 +75,14 @@
       border-radius: 3px;
       font-size: 0.9em;
       color: #333;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     #searchDevices:focus {
       outline: none;
-      border-color: #aaa;
+      border-color: #999;
+      box-shadow: 0 0 4px rgba(0,0,0,0.15);
     }
+
     .hideCompletedContainer {
       flex: 0 0 auto;
       display: flex;
@@ -93,7 +105,8 @@
       padding: 6px 12px;
       border: none;
       background: #ecf0f1;
-      color: #2c3e50;
+      /* Changed color from bluish #2c3e50 to maroon #800000 */
+      color: #800000;
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.9em;
@@ -107,7 +120,8 @@
       cursor: pointer;
       border: none;
       background: #ecf0f1;
-      color: #2c3e50;
+      /* Changed color from bluish #2c3e50 to maroon #800000 */
+      color: #800000;
       padding: 6px 12px;
       font-size: 0.9em;
       border-radius: 4px;
@@ -117,6 +131,10 @@
     #advancedToolsBtn:hover {
       background: #dde2e4;
     }
+
+    /* ==============================
+       Advanced Tools Dropdown
+       ============================== */
     #advancedToolsDropdown {
       position: absolute;
       top: 60px;
@@ -136,15 +154,21 @@
       padding: 8px;
       border: none;
       border-radius: 4px;
-      background: #2c3e50;
+      /* Replaced bluish #2c3e50 with dark red #800000 */
+      background: #800000;
       color: #fff;
       font-size: 0.9em;
       cursor: pointer;
       transition: background 0.2s ease;
     }
     #advancedToolsDropdown button:hover {
-      background: #1f2c38;
+      /* Replaced #1f2c38 with #650000 (matching the border color) */
+      background: #650000;
     }
+
+    /* ==============================
+       Header Info
+       ============================== */
     #headerInfo {
       text-align: center;
       font-weight: bold;
@@ -156,6 +180,10 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       color: #444;
     }
+
+    /* ==============================
+       Upload Section
+       ============================== */
     #uploadSection {
       max-width: 600px;
       margin: 20px auto;
@@ -178,14 +206,16 @@
       padding: 6px 12px;
       border: none;
       border-radius: 4px;
-      background: #2c3e50;
+      /* Replaced #2c3e50 with #800000 for the button background */
+      background: #800000;
       color: #fff;
       font-size: 0.9em;
       cursor: pointer;
       transition: background 0.2s ease;
     }
     #uploadSection button:hover {
-      background: #1f2c38;
+      /* Replaced #1f2c38 with #650000 */
+      background: #650000;
     }
     #loading {
       text-align: center;
@@ -193,9 +223,23 @@
       margin-top: 10px;
       color: #666;
     }
+
+    /* ==============================
+       Device List
+       ============================== */
+    /* New label above deviceList to show how many are on the page */
+    #devicesOnPage {
+      max-width: 800px;
+      margin: 0 auto 5px auto;
+      color: gray;
+      text-align: right;
+      font-size: 0.9em;
+      padding: 0 10px;
+    }
+
     #deviceList {
       max-width: 800px;
-      margin: 20px auto;
+      margin: 0 auto 20px auto;
       padding: 0;
       list-style: none;
     }
@@ -207,23 +251,31 @@
       display: flex;
       align-items: center;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
     }
     #deviceList li:hover {
       background: #f0f0f0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
     #deviceList input[type="checkbox"] {
       margin-right: 10px;
       transform: scale(1.2);
       cursor: pointer;
+      /* Make the checkbox check color red */
+      accent-color: #800000;
     }
+
+    /* ==============================
+       Back to Top Button
+       ============================== */
     #backToTopBtn {
       position: fixed;
       bottom: 20px;
       right: 20px;
       display: none;
       border: none;
-      background: #2c3e50;
+      /* Replaced #2c3e50 with #800000 */
+      background: #800000;
       color: #fff;
       padding: 8px 12px;
       border-radius: 4px;
@@ -233,7 +285,41 @@
       transition: background 0.2s ease;
     }
     #backToTopBtn:hover {
-      background: #1f2c38;
+      /* Replaced #1f2c38 with #650000 */
+      background: #650000;
+    }
+
+    /* ==============================
+       Responsive (max-width: 600px)
+       ============================== */
+    @media (max-width: 600px) {
+      #topBarContents {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #deviceCount {
+        margin-bottom: 10px;
+      }
+      #searchDevices {
+        max-width: 100%;
+        margin: 5px 0;
+      }
+      .hideCompletedContainer {
+        margin-bottom: 10px;
+      }
+      #undoLastBtn {
+        margin-bottom: 10px;
+      }
+      #advancedToolsBtn {
+        margin: 10px auto 0 auto;
+      }
+      #advancedToolsDropdown {
+        right: auto;
+        left: 10px;
+      }
+      #devicesOnPage {
+        text-align: center;
+      }
     }
   </style>
 
@@ -249,7 +335,6 @@
   <div id="fixedTopBar">
     <div id="topBarContents">
       <div id="deviceCount">Devices Remaining: 0</div>
-      <!-- Removed the topBarProjectTitle div -->
       <input
         type="text"
         id="searchDevices"
@@ -272,7 +357,7 @@
     </div>
   </div>
 
-  <!-- Still keeping the main title in the body -->
+  <!-- Main title -->
   <h1>Device Checklist</h1>
 
   <div id="headerInfo"></div>
@@ -291,11 +376,13 @@
 
   <div id="loading"></div>
 
+  <!-- New small label to show how many items are currently displayed -->
+  <div id="devicesOnPage">(Devices on page: 0)</div>
+
   <ul id="deviceList"></ul>
 
   <button id="backToTopBtn">Back to Top</button>
 
-  <!-- Main Script: removed references to #topBarProjectTitle -->
   <script>
     "use strict";
 
@@ -381,7 +468,6 @@
 
     function displayHeader(header) {
       document.getElementById("headerInfo").textContent = header;
-      // Removed: document.getElementById("topBarProjectTitle").textContent = header;
     }
 
     function updateDeviceCount() {
@@ -434,13 +520,15 @@
       const deviceList = document.getElementById("deviceList");
       deviceList.innerHTML = "";
 
+      /* Update the small label to show how many devices are on the page */
+      document.getElementById("devicesOnPage").textContent = `(Devices on page: ${filteredDevices.length})`;
+
       filteredDevices.forEach(item => {
         const device = item.device;
         const index = item.index;
 
         const isChecked = device.checked ? "checked" : "";
         const textStyle = device.checked ? "text-decoration: line-through;" : "";
-
         const formatted = formatDeviceText(device.text);
 
         const li = document.createElement("li");
@@ -604,6 +692,7 @@
         displayDevices(deviceChecklistData.devices);
       }
     });
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
@@ -611,7 +700,9 @@
           .catch(err => console.log('ServiceWorker registration failed:', err));
       });
     }
+
     document.getElementById("exportFileBtn").addEventListener("click", exportListToFile);
+
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.json';
