@@ -6,34 +6,192 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
-  <!-- iOS PWA Support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#333">
 
-  <!-- Simple styling -->
   <style>
+    /* --- Minimal polished styling, unchanged except for removal of #topBarProjectTitle --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f2f2f2;
+      background: #f9f9f9;
       color: #333;
+      margin-top: 150px;
+      line-height: 1.4;
     }
-    h1, h2 {
+    h1 {
       text-align: center;
+      color: #222;
+      margin-bottom: 10px;
+    }
+    #fixedTopBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #2c3e50;
+      color: #fff;
+      z-index: 9999;
+      border-bottom: 1px solid #1f2c38;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      padding: 10px 0;
+    }
+    #topBarContents {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 10px;
+    }
+    #deviceCount {
+      font-weight: bold;
+      font-size: 1.1em;
+      flex: 0 0 auto;
+      margin-right: 20px;
+    }
+    /* Removed the #topBarProjectTitle block entirely */
+
+    #searchDevices {
+      flex: 0 1 auto;
+      max-width: 150px;
+      padding: 6px 8px;
+      margin: 0 10px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 0.9em;
+      color: #333;
+      transition: border-color 0.2s ease;
+    }
+    #searchDevices:focus {
+      outline: none;
+      border-color: #aaa;
+    }
+    .hideCompletedContainer {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      margin: 0 10px;
+    }
+    .hideCompletedContainer label {
+      cursor: pointer;
+      margin-left: 4px;
+      font-size: 0.9em;
+      color: #fff;
+    }
+    .hideCompletedContainer input {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+    #undoLastBtn {
+      flex: 0 0 auto;
+      margin-right: 10px;
+      padding: 6px 12px;
+      border: none;
+      background: #ecf0f1;
+      color: #2c3e50;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background 0.2s ease;
+    }
+    #undoLastBtn:hover {
+      background: #dde2e4;
+    }
+    #advancedToolsBtn {
+      flex: 0 0 auto;
+      cursor: pointer;
+      border: none;
+      background: #ecf0f1;
+      color: #2c3e50;
+      padding: 6px 12px;
+      font-size: 0.9em;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+      margin-left: auto;
+    }
+    #advancedToolsBtn:hover {
+      background: #dde2e4;
+    }
+    #advancedToolsDropdown {
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 300px;
+      display: none;
+      padding: 10px;
+    }
+    #advancedToolsDropdown button {
+      display: block;
+      width: 100%;
+      margin: 5px 0;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      background: #2c3e50;
+      color: #fff;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    #advancedToolsDropdown button:hover {
+      background: #1f2c38;
     }
     #headerInfo {
       text-align: center;
       font-weight: bold;
       margin: 20px auto;
-      padding: 10px;
-      background: #e0e0e0;
+      padding: 15px;
+      background: #ecf0f1;
       border-radius: 4px;
       max-width: 800px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      color: #444;
     }
-    #uploadSection, #controls {
+    #uploadSection {
       max-width: 600px;
       margin: 20px auto;
       text-align: center;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    #uploadSection p {
+      margin: 10px 0;
+      color: #555;
+    }
+    #uploadSection input[type="file"] {
+      margin: 8px 0;
+      font-size: 0.9em;
+    }
+    #uploadSection button {
+      margin: 5px 8px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      background: #2c3e50;
+      color: #fff;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    #uploadSection button:hover {
+      background: #1f2c38;
+    }
+    #loading {
+      text-align: center;
+      font-style: italic;
+      margin-top: 10px;
+      color: #666;
     }
     #deviceList {
       max-width: 800px;
@@ -49,136 +207,109 @@
       display: flex;
       align-items: center;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: background 0.2s ease;
+    }
+    #deviceList li:hover {
+      background: #f0f0f0;
     }
     #deviceList input[type="checkbox"] {
       margin-right: 10px;
+      transform: scale(1.2);
+      cursor: pointer;
     }
-    #loading {
-      text-align: center;
-      font-style: italic;
+    #backToTopBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: none;
+      border: none;
+      background: #2c3e50;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 9999;
+      transition: background 0.2s ease;
     }
-    /* Controls styling */
-    #controls input[type="text"] {
-      padding: 5px;
-      width: 200px;
-      margin-right: 10px;
-    }
-    #controls button {
-      padding: 5px 10px;
-      margin: 5px;
-    }
-    #controls label {
-      margin-left: 20px;
-      font-size: 0.9em;
-    }
-    /* Device count styling */
-    #deviceCount {
-      text-align: center;
-      font-size: 1.1em;
-      margin-bottom: 10px;
-    }
-    /* Order (countdown) styling */
-    .orderCounter {
-      font-size: 0.8em;
-      margin-right: 5px;
-      color: #555;
-      width: 50px;
-      text-align: right;
+    #backToTopBtn:hover {
+      background: #1f2c38;
     }
   </style>
 
-  <!-- Include PDF.js from CDN -->
+  <!-- PDF.js + XLSX includes, unchanged -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  <!-- Set up PDF.js worker -->
   <script>
-    "use strict";
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
   </script>
-  <!-- Include SheetJS (xlsx) from CDN for Excel parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+  <!-- Fixed top bar -->
+  <div id="fixedTopBar">
+    <div id="topBarContents">
+      <div id="deviceCount">Devices Remaining: 0</div>
+      <!-- Removed the topBarProjectTitle div -->
+      <input
+        type="text"
+        id="searchDevices"
+        placeholder="Search devices..."
+        aria-label="Search devices"
+      >
+      <div class="hideCompletedContainer">
+        <input type="checkbox" id="toggleHideCompleted" />
+        <label for="toggleHideCompleted">Hide Completed</label>
+      </div>
+      <button id="undoLastBtn">Undo Last</button>
+      <button id="advancedToolsBtn" aria-haspopup="true" aria-expanded="false">Advanced Tools</button>
+    </div>
+
+    <!-- Advanced Tools dropdown -->
+    <div id="advancedToolsDropdown">
+      <button id="markAllBtn">Mark All Completed</button>
+      <button id="clearAllBtn">Clear All</button>
+      <button id="clearSessionBtn">Clear Session</button>
+    </div>
+  </div>
+
+  <!-- Still keeping the main title in the body -->
   <h1>Device Checklist</h1>
 
-  <!-- Header info display -->
-  <div id="headerInfo" role="heading" aria-level="2"></div>
+  <div id="headerInfo"></div>
 
   <div id="uploadSection">
     <p>Select one or more PDF files containing device records:</p>
-    <!-- PDF file input -->
-    <input type="file" id="pdfInput" accept="application/pdf" multiple aria-label="Upload PDF files containing device records">
-    
-    <!-- New Excel file input -->
+    <input type="file" id="pdfInput" accept="application/pdf" multiple>
+
     <p>Select one or more Excel files containing device records:</p>
-    <input type="file" id="excelInput" accept=".xlsx, .xls" multiple aria-label="Upload Excel files containing device records">
-    
-    <!-- Always-visible Export/Import for sharing device checklist -->
+    <input type="file" id="excelInput" accept=".xlsx, .xls" multiple>
+
     <p>Import / Export Device Checklist:</p>
-    <button id="exportFileBtn" aria-label="Export the checklist as a JSON file">Export to File</button>
-    <button id="importFileBtn" aria-label="Import a checklist JSON file">Import from File</button>
+    <button id="exportFileBtn">Export to File</button>
+    <button id="importFileBtn">Import from File</button>
   </div>
 
-  <div id="loading" aria-live="polite"></div>
-  
-  <!-- Controls: search, mark/clear all, clear session, crossout, counter toggle, accidental touch -->
-  <div id="controls" style="display:none;">
-    <input
-      type="text"
-      id="searchDevices"
-      placeholder="Search devices..."
-      aria-label="Search devices"
-    >
-    <button id="markAllBtn" aria-label="Mark all devices as completed">Mark All as Completed</button>
-    <button id="clearAllBtn" aria-label="Clear all device checkboxes">Clear All</button>
-    <button id="clearSessionBtn" aria-label="Clear saved session and reset data">Clear Saved Session</button>
-    <br>
-    <label>
-      <input type="checkbox" id="toggleCrossout">
-      Enable Crossout
-    </label>
-    <label>
-      <input type="checkbox" id="toggleCounter">
-      Display Countdown
-    </label>
-    <label title="Prevent unchecking of an already checked item.">
-      <input type="checkbox" id="toggleAccidentalTouch">
-      Accidental Touch
-    </label>
-  </div>
+  <div id="loading"></div>
 
-  <h2>Device Checklist</h2>
-  <!-- Device count display -->
-  <div id="deviceCount"></div>
-  
-  <ul id="deviceList" role="list"></ul>
+  <ul id="deviceList"></ul>
 
-  <!-- Main Script -->
+  <button id="backToTopBtn">Back to Top</button>
+
+  <!-- Main Script: removed references to #topBarProjectTitle -->
   <script>
     "use strict";
 
-    // Global data structure for header and devices with their checked states.
-    // Each device object: { text: string, checked: boolean }
     let deviceChecklistData = {
       header: "",
       devices: []
     };
+    let undoStack = [];
+    let hideCompleted = false;
 
-    // Global flags
-    let crossoutEnabled = false;
-    let counterEnabled = false;
-    let accidentalTouchEnabled = false;
-
-    /**
-     * Save the current checklist data to localStorage.
-     */
     function saveSession() {
       localStorage.setItem("deviceChecklist", JSON.stringify(deviceChecklistData));
     }
 
-    /**
-     * Load checklist data from localStorage, if available.
-     * @returns {boolean} true if session data was loaded, false otherwise
-     */
     function loadSession() {
       const data = localStorage.getItem("deviceChecklist");
       if (data) {
@@ -188,31 +319,21 @@
       return false;
     }
 
-    /**
-     * Clear the saved session entirely.
-     */
     function clearSession() {
       localStorage.removeItem("deviceChecklist");
       deviceChecklistData = { header: "", devices: [] };
+      undoStack = [];
     }
 
-    /**
-     * Extract header and device records from raw PDF text.
-     * @param {string} text - The extracted raw text from the PDF
-     * @returns {object} - An object containing the header string and devices array
-     */
     function extractHeaderAndDevices(text) {
-      // Remove footer/header patterns like "Page X of Y"
+      // (Unchanged parsing logic)
       text = text.replace(/Page \d+\s*of\s*\d+/gi, '');
-
-      // Split text into non-empty, trimmed lines.
       let lines = text
         .split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0);
 
       let header = "";
-      // Look for header info that starts with "Project".
       if (lines.length >= 3 && lines[0].startsWith("Project")) {
         header = lines[0] + " " + lines[1] + " " + lines[2];
         if (lines[3] && lines[3].includes("Device Barcode Label")) {
@@ -220,19 +341,19 @@
         } else {
           lines = lines.slice(3);
         }
-      }
-      // Otherwise, if first line contains unwanted header info.
-      else if (lines.length > 0 && lines[0].includes("Version :") && lines[0].includes("Device Barcode Label")) {
+      } else if (lines.length > 0 && lines[0].includes("Version :") && lines[0].includes("Device Barcode Label")) {
         header = lines[0];
         lines.shift();
       }
+      if (!header && lines.length > 0) {
+        header = lines[0];
+        lines = lines.slice(1);
+      }
 
-      // Regular expression to match a serial number (e.g., "001:002:0001").
       const serialRegex = /^\d{3}:\d{3}:\d{4}$/;
       let rawDevices = [];
       let currentDevice = [];
 
-      // Group lines into devices; when a serial number is detected, finalize the device record.
       for (const line of lines) {
         if (serialRegex.test(line)) {
           currentDevice.push(line);
@@ -246,7 +367,6 @@
         rawDevices.push(currentDevice.join(" "));
       }
 
-      // Remove unwanted header text from the first device record if it begins with "Version :".
       if (rawDevices.length > 0 && rawDevices[0].startsWith("Version :")) {
         const headerKey = "Device Type LRM SLC System Address";
         const idx = rawDevices[0].indexOf(headerKey);
@@ -255,135 +375,135 @@
         }
       }
 
-      // Map raw devices to device objects with an unchecked state.
       const devices = rawDevices.map(txt => ({ text: txt, checked: false }));
-
       return { header, devices };
     }
 
-    /**
-     * Display header information in the designated element.
-     * @param {string} header - Header text to display
-     */
     function displayHeader(header) {
       document.getElementById("headerInfo").textContent = header;
+      // Removed: document.getElementById("topBarProjectTitle").textContent = header;
     }
 
-    /**
-     * Render the device checklist and update the device count.
-     * This function applies the search filter if any text is in the search bar.
-     * @param {Array} devices - Array of device objects
-     */
+    function updateDeviceCount() {
+      const remaining = deviceChecklistData.devices.filter(d => !d.checked).length;
+      document.getElementById("deviceCount").textContent = "Devices Remaining: " + remaining;
+    }
+
+    function formatDeviceText(rawText) {
+      const textLines = rawText.split(/\n+/).map(l => l.trim());
+      let firstLine = "";
+      let remainder = "";
+
+      if (textLines.length && /^\d{3}:\d{3}:\d{4}$/.test(textLines[0])) {
+        firstLine = textLines[0];
+        remainder = textLines.slice(1).join(" ");
+      } else {
+        remainder = textLines.join(" ");
+      }
+
+      const words = remainder.split(/\s+/).filter(Boolean);
+      let uppercaseChunk = [];
+      let i = 0;
+      for (; i < words.length; i++) {
+        if (/[a-z]/.test(words[i])) break;
+        uppercaseChunk.push(words[i]);
+      }
+      const secondLine = uppercaseChunk.join(" ");
+      const rest = words.slice(i).join(" ");
+
+      const line1 = firstLine ? `<strong>${firstLine}</strong>` : "";
+      const line2 = secondLine ? `<span style="font-weight:bold;">${secondLine}</span>` : "";
+      const line3 = rest ? `<em style="display:block; margin-top:3px;">Misc Info: ${rest}</em>` : "";
+
+      return [line1, line2, line3].filter(Boolean).join("<br>");
+    }
+
     function displayDevices(devices) {
-      // Get the current search term from the search input
       const searchTerm = document.getElementById("searchDevices").value.toLowerCase();
 
-      // Filter devices based on the search term
       const filteredDevices = devices
         .map((device, index) => ({ device, index }))
         .filter(item => {
-          return (!searchTerm ||
-                  item.device.text.toLowerCase().includes(searchTerm));
+          const matchesSearch = !searchTerm || item.device.text.toLowerCase().includes(searchTerm);
+          if (hideCompleted && item.device.checked) {
+            return false;
+          }
+          return matchesSearch;
         });
 
       const deviceList = document.getElementById("deviceList");
-      deviceList.innerHTML = ""; // Clear previous list
+      deviceList.innerHTML = "";
 
-      // Update device count display to show filtered devices
-      document.getElementById("deviceCount").textContent =
-        "Device Count: " + filteredDevices.length;
-
-      // Iterate over filtered devices and render each
-      filteredDevices.forEach((item, displayIndex) => {
+      filteredDevices.forEach(item => {
         const device = item.device;
         const index = item.index;
-        
-        // Optional: Countdown from the total number of filtered devices
-        let orderHTML = "";
-        if (counterEnabled) {
-          const countdown = filteredDevices.length - displayIndex;
-          orderHTML = `<span class="orderCounter">${countdown}</span>`;
-        }
+
+        const isChecked = device.checked ? "checked" : "";
+        const textStyle = device.checked ? "text-decoration: line-through;" : "";
+
+        const formatted = formatDeviceText(device.text);
 
         const li = document.createElement("li");
         li.setAttribute("role", "listitem");
 
-        const isChecked = device.checked ? "checked" : "";
-        // Apply line-through style if crossout is enabled and the device is checked
-        const textStyle = (crossoutEnabled && device.checked)
-          ? "text-decoration: line-through;"
-          : "";
+        li.innerHTML = `
+          <input type="checkbox" id="device-${index}" ${isChecked}>
+          <label for="device-${index}" style="${textStyle}">
+            ${formatted}
+          </label>
+        `;
 
-        li.innerHTML =
-          `${orderHTML}
-           <input type="checkbox" id="device-${index}" ${isChecked} aria-label="Check device: ${device.text}">
-           <label for="device-${index}" style="${textStyle}">${device.text}</label>`;
+        li.querySelector("input[type='checkbox']").addEventListener("change", (e) => {
+          const oldValue = deviceChecklistData.devices[index].checked;
+          const newValue = e.target.checked;
+          undoStack.push({ index, oldValue, newValue });
 
-        // Handle checkbox changes (using the original device index)
-        li.querySelector("input[type='checkbox']").addEventListener("change", function(e) {
-          if (accidentalTouchEnabled) {
-            // If "accidental touch" is on, don't allow unchecking a previously checked device
-            if (deviceChecklistData.devices[index].checked && !e.target.checked) {
-              e.target.checked = true;
-            } else {
-              deviceChecklistData.devices[index].checked = e.target.checked;
-            }
-          } else {
-            deviceChecklistData.devices[index].checked = e.target.checked;
-          }
+          deviceChecklistData.devices[index].checked = newValue;
           saveSession();
-          // Re-render the list to reflect any crossout or countdown changes
+          updateDeviceCount();
           displayDevices(deviceChecklistData.devices);
         });
 
         deviceList.appendChild(li);
       });
 
-      // Show or hide controls based on whether there are any devices loaded
-      document.getElementById("controls").style.display = (devices.length > 0) ? "block" : "none";
+      updateDeviceCount();
     }
 
-    /**
-     * EXPORT - Let the user download the entire checklist as a JSON file.
-     */
+    function undoLastChange() {
+      if (!undoStack.length) {
+        alert("No action to undo!");
+        return;
+      }
+      const { index, oldValue } = undoStack.pop();
+      deviceChecklistData.devices[index].checked = oldValue;
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    }
+
     function exportListToFile() {
-      // Convert data to a JSON string; pretty-print with 2 spaces for readability
       const dataStr = JSON.stringify(deviceChecklistData, null, 2);
-
-      // Create a Blob from the JSON
       const blob = new Blob([dataStr], { type: 'application/json' });
-
-      // Create a temporary <a> link and use URL.createObjectURL to download the file
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'device-checklist.json'; // The file name
+      link.download = 'device-checklist.json';
       link.click();
-
-      // Clean up the URL object
       URL.revokeObjectURL(url);
     }
 
-    /**
-     * IMPORT - Load a .json checklist file that the user has.
-     */
-    function importListFromFile(event) {
-      const file = event.target.files[0];
-      if (!file) return; // user canceled or didn't choose a file
-
-      if (!file.name.toLowerCase().endsWith('.json')) {
+    function importListFromFile(e) {
+      const file = e.target.files[0];
+      if (!file || !file.name.toLowerCase().endsWith('.json')) {
         alert("Please select a .json file.");
         return;
       }
-
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function(evt) {
         try {
-          const importedData = JSON.parse(e.target.result);
-          // Overwrite current data
+          const importedData = JSON.parse(evt.target.result);
           deviceChecklistData = importedData;
-
-          // Save & re-render
+          undoStack = [];
           saveSession();
           displayHeader(deviceChecklistData.header);
           displayDevices(deviceChecklistData.devices);
@@ -395,23 +515,20 @@
       reader.readAsText(file);
     }
 
-    /**
-     * Helper function: reads and parses a single PDF file, returning { header, devices }.
-     */
     function parsePDF(file) {
       return new Promise((resolve, reject) => {
-        const fileReader = new FileReader();
-        fileReader.onload = function() {
+        const fr = new FileReader();
+        fr.onload = function() {
           const typedarray = new Uint8Array(this.result);
           pdfjsLib.getDocument(typedarray).promise
             .then(pdf => {
-              const pagesPromises = [];
+              const pages = [];
               for (let i = 1; i <= pdf.numPages; i++) {
-                pagesPromises.push(pdf.getPage(i).then(page => page.getTextContent()));
+                pages.push(pdf.getPage(i).then(page => page.getTextContent()));
               }
-              Promise.all(pagesPromises).then(pages => {
+              Promise.all(pages).then(all => {
                 let fullText = "";
-                pages.forEach(page => {
+                all.forEach(page => {
                   page.items.forEach(item => {
                     fullText += item.str + "\n";
                   });
@@ -419,39 +536,28 @@
                 resolve(extractHeaderAndDevices(fullText));
               }).catch(err => reject(err));
             })
-            .catch(error => reject(error));
+            .catch(err => reject(err));
         };
-        fileReader.readAsArrayBuffer(file);
+        fr.readAsArrayBuffer(file);
       });
     }
 
-    /**
-     * Helper function to parse an Excel file.
-     * It reads rows starting at row 7, columns B through G, and creates device objects.
-     * @param {File} file - The Excel file uploaded by the user.
-     * @returns {Promise} - Resolves with an object { header, devices }
-     */
     function parseExcel(file) {
       return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
+        const fr = new FileReader();
+        fr.onload = function(e) {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          // Use the first worksheet.
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
+          const wb = XLSX.read(data, { type: 'array' });
+          const firstSheetName = wb.SheetNames[0];
+          const ws = wb.Sheets[firstSheetName];
           const devices = [];
-          let row = 7; // devices start at row 7.
-          while (true) {
-            // Check if cell B(row) has a value.
-            const cellB = worksheet["B" + row];
-            if (!cellB || cellB.v === undefined || cellB.v === null || cellB.v === "") {
-              break;
-            }
+          let row = 7;
+          while(true) {
+            const cellB = ws["B" + row];
+            if (!cellB || !cellB.v) break;
             let deviceText = "";
-            // Concatenate cells from columns B through G (with a space separator).
-            ["B", "C", "D", "E", "F", "G"].forEach(col => {
-              const cell = worksheet[col + row];
+            ["B","C","D","E","F","G"].forEach(col => {
+              const cell = ws[col + row];
               if (cell && cell.v) {
                 deviceText += cell.v + " ";
               }
@@ -459,85 +565,53 @@
             devices.push({ text: deviceText.trim(), checked: false });
             row++;
           }
-          // For Excel files, header remains empty (or you could extract one if needed).
           resolve({ header: "", devices });
         };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(file);
       });
     }
 
-    // Mark all devices as completed.
-    document.getElementById("markAllBtn").addEventListener("click", function() {
-      deviceChecklistData.devices.forEach(device => device.checked = true);
+    // Event handlers
+    document.getElementById("undoLastBtn").addEventListener("click", undoLastChange);
+    document.getElementById("markAllBtn").addEventListener("click", () => {
+      deviceChecklistData.devices.forEach(d => d.checked = true);
       saveSession();
       displayDevices(deviceChecklistData.devices);
     });
-
-    // Clear all checkbox selections.
-    document.getElementById("clearAllBtn").addEventListener("click", function() {
-      deviceChecklistData.devices.forEach(device => device.checked = false);
+    document.getElementById("clearAllBtn").addEventListener("click", () => {
+      deviceChecklistData.devices.forEach(d => d.checked = false);
       saveSession();
       displayDevices(deviceChecklistData.devices);
     });
-
-    // Button to clear the saved session (with confirmation).
-    document.getElementById("clearSessionBtn").addEventListener("click", function() {
-      if (confirm("Are you sure you want to clear the saved session? This will remove the current checklist.")) {
+    document.getElementById("clearSessionBtn").addEventListener("click", () => {
+      if (confirm("Are you sure you want to clear the saved session?")) {
         clearSession();
         displayHeader("");
         displayDevices([]);
       }
     });
-
-    // Toggle the crossout effect.
-    document.getElementById("toggleCrossout").addEventListener("change", function(e) {
-      crossoutEnabled = e.target.checked;
+    document.getElementById("toggleHideCompleted").addEventListener("change", (e) => {
+      hideCompleted = e.target.checked;
       displayDevices(deviceChecklistData.devices);
     });
-
-    // Toggle the simple countdown display.
-    document.getElementById("toggleCounter").addEventListener("change", function(e) {
-      counterEnabled = e.target.checked;
+    document.getElementById("searchDevices").addEventListener("input", () => {
       displayDevices(deviceChecklistData.devices);
     });
-
-    // Toggle the accidental touch feature.
-    document.getElementById("toggleAccidentalTouch").addEventListener("change", function(e) {
-      accidentalTouchEnabled = e.target.checked;
-      displayDevices(deviceChecklistData.devices);
-    });
-
-    // Listen for typing in the Search box & update in real-time
-    document.getElementById("searchDevices").addEventListener("input", function() {
-      displayDevices(deviceChecklistData.devices);
-    });
-
-    // On page load, check for an existing session and load it.
-    window.addEventListener("load", function() {
+    window.addEventListener("load", () => {
       if (loadSession()) {
         displayHeader(deviceChecklistData.header);
         displayDevices(deviceChecklistData.devices);
       }
     });
-
-    // Register Service Worker for PWA capabilities.
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
+      window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
-          .then(function(registration) {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(function(error) {
-            console.log('ServiceWorker registration failed:', error);
-          });
+          .then(reg => console.log('ServiceWorker registered:', reg.scope))
+          .catch(err => console.log('ServiceWorker registration failed:', err));
       });
     }
-
-    // Attach event listeners to Export/Import file buttons
-    document.getElementById('exportFileBtn').addEventListener('click', exportListToFile);
-
-    // We'll add a hidden <input type="file"> for the import flow, triggered by the button
+    document.getElementById("exportFileBtn").addEventListener("click", exportListToFile);
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.json';
@@ -545,78 +619,62 @@
     fileInput.addEventListener('change', importListFromFile);
     document.body.appendChild(fileInput);
 
-    document.getElementById('importFileBtn').addEventListener('click', () => {
-      fileInput.value = ''; // reset so user can pick a file each time
+    document.getElementById("importFileBtn").addEventListener("click", () => {
+      fileInput.value = '';
       fileInput.click();
     });
 
-    // Process one or more PDF uploads, extract devices, and update the session.
-    document.getElementById("pdfInput").addEventListener("change", function(e) {
+    document.getElementById("pdfInput").addEventListener("change", (e) => {
       const files = e.target.files;
-      if (!files || files.length === 0) {
+      if (!files || !files.length) {
         alert("Please upload at least one valid PDF file.");
         return;
       }
-      
-      const loadingIndicator = document.getElementById("loading");
-      loadingIndicator.textContent = "Loading PDF(s), please wait...";
-
-      // Build a list of promises to parse each selected PDF.
+      const loading = document.getElementById("loading");
+      loading.textContent = "Loading PDF(s) ...";
       const parsePromises = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        // Skip any non-PDF files if user selects them by mistake.
-        if (file.type === "application/pdf") {
-          parsePromises.push(parsePDF(file));
+      for (let i=0; i<files.length; i++){
+        if (files[i].type === "application/pdf"){
+          parsePromises.push(parsePDF(files[i]));
         }
       }
-
-      // When all PDFs are done parsing:
       Promise.all(parsePromises)
         .then(results => {
-          // results is an array of { header, devices } from each PDF.
           results.forEach(extracted => {
-            // If there's no header set yet, use the first PDF's header.
             if (!deviceChecklistData.header && extracted.header) {
               deviceChecklistData.header = extracted.header;
             }
-            // Append new devices to the existing list.
             if (extracted.devices && extracted.devices.length) {
               deviceChecklistData.devices.push(...extracted.devices);
             }
           });
-
           saveSession();
           displayHeader(deviceChecklistData.header);
           displayDevices(deviceChecklistData.devices);
-          loadingIndicator.textContent = "";
+          loading.textContent = "";
         })
-        .catch(error => {
-          console.error("Error loading PDFs: ", error);
-          loadingIndicator.textContent = "Error loading one or more PDFs.";
+        .catch(err => {
+          console.error("Error loading PDFs:", err);
+          loading.textContent = "Error loading one or more PDFs.";
         });
     });
 
-    // Process Excel file uploads, extract devices, and update the session.
-    document.getElementById("excelInput").addEventListener("change", function(e) {
+    document.getElementById("excelInput").addEventListener("change", (e) => {
       const files = e.target.files;
-      if (!files || files.length === 0) {
+      if (!files || !files.length) {
         alert("Please upload at least one valid Excel file.");
         return;
       }
-      
-      const loadingIndicator = document.getElementById("loading");
-      loadingIndicator.textContent = "Loading Excel file(s), please wait...";
-
+      const loading = document.getElementById("loading");
+      loading.textContent = "Loading Excel file(s) ...";
       const parsePromises = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        // Check file extension as an extra precaution.
-        if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-          parsePromises.push(parseExcel(file));
+      for (let i=0; i<files.length; i++){
+        const f = files[i];
+        const lower = f.name.toLowerCase();
+        if (lower.endsWith(".xlsx") || lower.endsWith(".xls")){
+          parsePromises.push(parseExcel(f));
         }
       }
-
       Promise.all(parsePromises)
         .then(results => {
           results.forEach(extracted => {
@@ -630,12 +688,42 @@
           saveSession();
           displayHeader(deviceChecklistData.header);
           displayDevices(deviceChecklistData.devices);
-          loadingIndicator.textContent = "";
+          loading.textContent = "";
         })
-        .catch(error => {
-          console.error("Error loading Excel files: ", error);
-          loadingIndicator.textContent = "Error loading one or more Excel files.";
+        .catch(err => {
+          console.error("Error loading Excel files:", err);
+          loading.textContent = "Error loading one or more Excel files.";
         });
+    });
+
+    const advancedToolsBtn = document.getElementById('advancedToolsBtn');
+    const advancedToolsDropdown = document.getElementById('advancedToolsDropdown');
+    advancedToolsBtn.addEventListener('click', () => {
+      if (advancedToolsDropdown.style.display === 'none' || !advancedToolsDropdown.style.display) {
+        advancedToolsDropdown.style.display = 'block';
+        advancedToolsBtn.setAttribute('aria-expanded', 'true');
+      } else {
+        advancedToolsDropdown.style.display = 'none';
+        advancedToolsBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+    window.addEventListener('click', (e) => {
+      if (!advancedToolsDropdown.contains(e.target) && e.target !== advancedToolsBtn) {
+        advancedToolsDropdown.style.display = 'none';
+        advancedToolsBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    const backToTopBtn = document.getElementById("backToTopBtn");
+    window.addEventListener("scroll", () => {
+      if (document.documentElement.scrollTop > 400 || document.body.scrollTop > 400) {
+        backToTopBtn.style.display = "block";
+      } else {
+        backToTopBtn.style.display = "none";
+      }
+    });
+    backToTopBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   </script>
 </body>
