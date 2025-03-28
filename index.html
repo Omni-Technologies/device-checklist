@@ -39,11 +39,9 @@
       top: 0;
       left: 0;
       width: 100%;
-      /* Maroon background */
       background: #800000;
       color: #fff;
       z-index: 9999;
-      /* Maroon-ish darker border */
       border-bottom: 1px solid #650000;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       padding: 10px 0;
@@ -55,10 +53,12 @@
       align-items: center;
       justify-content: flex-start;
       padding: 0 10px;
+      flex-wrap: wrap; /* for small screens if needed */
     }
+    /* Slightly bigger text for devices-remaining label */
     #deviceCount {
       font-weight: bold;
-      font-size: 1.1em;
+      font-size: 1.15em;
       flex: 0 0 auto;
       margin-right: 20px;
     }
@@ -99,13 +99,13 @@
       transform: scale(1.2);
       cursor: pointer;
     }
+
     #undoLastBtn {
       flex: 0 0 auto;
       margin-right: 10px;
       padding: 6px 12px;
       border: none;
       background: #ecf0f1;
-      /* Changed color from bluish #2c3e50 to maroon #800000 */
       color: #800000;
       border-radius: 4px;
       cursor: pointer;
@@ -120,7 +120,6 @@
       cursor: pointer;
       border: none;
       background: #ecf0f1;
-      /* Changed color from bluish #2c3e50 to maroon #800000 */
       color: #800000;
       padding: 6px 12px;
       font-size: 0.9em;
@@ -154,7 +153,6 @@
       padding: 8px;
       border: none;
       border-radius: 4px;
-      /* Replaced bluish #2c3e50 with dark red #800000 */
       background: #800000;
       color: #fff;
       font-size: 0.9em;
@@ -162,7 +160,6 @@
       transition: background 0.2s ease;
     }
     #advancedToolsDropdown button:hover {
-      /* Replaced #1f2c38 with #650000 (matching the border color) */
       background: #650000;
     }
 
@@ -206,7 +203,6 @@
       padding: 6px 12px;
       border: none;
       border-radius: 4px;
-      /* Replaced #2c3e50 with #800000 for the button background */
       background: #800000;
       color: #fff;
       font-size: 0.9em;
@@ -214,7 +210,6 @@
       transition: background 0.2s ease;
     }
     #uploadSection button:hover {
-      /* Replaced #1f2c38 with #650000 */
       background: #650000;
     }
     #loading {
@@ -227,7 +222,6 @@
     /* ==============================
        Device List
        ============================== */
-    /* New label above deviceList to show how many are on the page */
     #devicesOnPage {
       max-width: 800px;
       margin: 0 auto 5px auto;
@@ -236,7 +230,6 @@
       font-size: 0.9em;
       padding: 0 10px;
     }
-
     #deviceList {
       max-width: 800px;
       margin: 0 auto 20px auto;
@@ -261,8 +254,7 @@
       margin-right: 10px;
       transform: scale(1.2);
       cursor: pointer;
-      /* Make the checkbox check color red */
-      accent-color: #800000;
+      accent-color: #800000; /* red checkbox */
     }
 
     /* ==============================
@@ -274,7 +266,6 @@
       right: 20px;
       display: none;
       border: none;
-      /* Replaced #2c3e50 with #800000 */
       background: #800000;
       color: #fff;
       padding: 8px 12px;
@@ -285,7 +276,6 @@
       transition: background 0.2s ease;
     }
     #backToTopBtn:hover {
-      /* Replaced #1f2c38 with #650000 */
       background: #650000;
     }
 
@@ -293,30 +283,41 @@
        Responsive (max-width: 600px)
        ============================== */
     @media (max-width: 600px) {
+      /* Make the top bar contents stack vertically, centered. */
       #topBarContents {
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
       }
+      /* Larger text for "Devices Remaining" on mobile, centered, no margin-right */
       #deviceCount {
-        margin-bottom: 10px;
+        font-size: 1.25em;
+        margin: 8px 0;
       }
+      /* Center and widen search box on mobile */
       #searchDevices {
-        max-width: 100%;
-        margin: 5px 0;
+        margin: 8px 0;
+        max-width: 80%;
       }
       .hideCompletedContainer {
-        margin-bottom: 10px;
+        margin: 8px 0;
+        justify-content: center;
       }
       #undoLastBtn {
-        margin-bottom: 10px;
+        margin: 8px 0;
       }
+      /* Make advanced tools button appear after the undo button, centered. */
       #advancedToolsBtn {
-        margin: 10px auto 0 auto;
+        margin: 8px 0;
+        margin-left: 0;
       }
+      /* Reposition the dropdown if needed */
       #advancedToolsDropdown {
         right: auto;
-        left: 10px;
+        left: 50%;
+        transform: translateX(-50%);
       }
+      /* Center the "Devices on page" label if desired. */
       #devicesOnPage {
         text-align: center;
       }
@@ -376,9 +377,7 @@
 
   <div id="loading"></div>
 
-  <!-- New small label to show how many items are currently displayed -->
   <div id="devicesOnPage">(Devices on page: 0)</div>
-
   <ul id="deviceList"></ul>
 
   <button id="backToTopBtn">Back to Top</button>
