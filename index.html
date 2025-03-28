@@ -50,27 +50,28 @@
       max-width: 800px;
       margin: 0 auto;
       display: flex;
+      flex-wrap: wrap; /* for mobile if needed */
       align-items: center;
       justify-content: flex-start;
       padding: 0 10px;
-      flex-wrap: wrap; /* for small screens if needed */
     }
     /* Slightly bigger text for devices-remaining label */
     #deviceCount {
       font-weight: bold;
       font-size: 1.15em;
-      flex: 0 0 auto;
+      flex: 0 1 auto;
       margin-right: 20px;
+      margin-bottom: 6px;
     }
 
     /* ==============================
        Top Bar Inputs / Buttons
        ============================== */
     #searchDevices {
-      flex: 0 1 auto;
-      max-width: 150px;
+      flex: 1 1 auto;
+      max-width: 180px;
       padding: 6px 8px;
-      margin: 0 10px;
+      margin: 0 10px 6px 0;
       border: 1px solid #ccc;
       border-radius: 3px;
       font-size: 0.9em;
@@ -83,11 +84,20 @@
       box-shadow: 0 0 4px rgba(0,0,0,0.15);
     }
 
+    /* 
+       Row for hide-completed, advanced tools, undo.
+       We call it tripleActions and place them horizontally.
+    */
+    .tripleActions {
+      display: flex;
+      flex: 1 1 100%;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
     .hideCompletedContainer {
-      flex: 0 0 auto;
       display: flex;
       align-items: center;
-      margin: 0 10px;
     }
     .hideCompletedContainer label {
       cursor: pointer;
@@ -100,24 +110,7 @@
       cursor: pointer;
     }
 
-    #undoLastBtn {
-      flex: 0 0 auto;
-      margin-right: 10px;
-      padding: 6px 12px;
-      border: none;
-      background: #ecf0f1;
-      color: #800000;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9em;
-      transition: background 0.2s ease;
-    }
-    #undoLastBtn:hover {
-      background: #dde2e4;
-    }
     #advancedToolsBtn {
-      flex: 0 0 auto;
-      cursor: pointer;
       border: none;
       background: #ecf0f1;
       color: #800000;
@@ -125,9 +118,23 @@
       font-size: 0.9em;
       border-radius: 4px;
       transition: background 0.2s ease;
-      margin-left: auto;
+      margin: 0 8px;
+      cursor: pointer;
     }
     #advancedToolsBtn:hover {
+      background: #dde2e4;
+    }
+    #undoLastBtn {
+      border: none;
+      background: #ecf0f1;
+      color: #800000;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 0.9em;
+      transition: background 0.2s ease;
+      cursor: pointer;
+    }
+    #undoLastBtn:hover {
       background: #dde2e4;
     }
 
@@ -283,58 +290,44 @@
        Responsive (max-width: 600px)
        ============================== */
     @media (max-width: 600px) {
-      /* Make the top bar contents stack vertically, centered. */
-      #topBarContents {
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-      /* Larger text for "Devices Remaining" on mobile, centered, no margin-right */
       #deviceCount {
-        font-size: 1.25em;
-        margin: 8px 0;
+        font-size: 1.2em;
+        margin-bottom: 8px;
+        margin-right: 0;
       }
-      /* Center and widen search box on mobile */
       #searchDevices {
-        margin: 8px 0;
-        max-width: 80%;
+        max-width: 90%;
+        margin-bottom: 12px;
       }
-      .hideCompletedContainer {
-        margin: 8px 0;
+      .tripleActions {
+        flex-wrap: wrap;
         justify-content: center;
-      }
-      #undoLastBtn {
-        margin: 8px 0;
-      }
-      /* Make advanced tools button appear after the undo button, centered. */
-      #advancedToolsBtn {
-        margin: 8px 0;
-        margin-left: 0;
-      }
-      /* Reposition the dropdown if needed */
-      #advancedToolsDropdown {
-        right: auto;
-        left: 50%;
-        transform: translateX(-50%);
       }
       /* Center the "Devices on page" label if desired. */
       #devicesOnPage {
         text-align: center;
       }
+      #advancedToolsDropdown {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+      }
     }
   </style>
 
-  <!-- PDF.js + XLSX includes, unchanged -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  <script>
+  <!-- Defer loading of libraries for slightly faster initial render -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js" defer></script>
+  <script defer>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+
 </head>
 <body>
   <!-- Fixed top bar -->
   <div id="fixedTopBar">
     <div id="topBarContents">
+      <!-- devices remaining + search on top row -->
       <div id="deviceCount">Devices Remaining: 0</div>
       <input
         type="text"
@@ -342,12 +335,16 @@
         placeholder="Search devices..."
         aria-label="Search devices"
       >
-      <div class="hideCompletedContainer">
-        <input type="checkbox" id="toggleHideCompleted" />
-        <label for="toggleHideCompleted">Hide Completed</label>
+
+      <!-- 2nd row for hide completed, advanced tools, undo -->
+      <div class="tripleActions">
+        <div class="hideCompletedContainer">
+          <input type="checkbox" id="toggleHideCompleted" />
+          <label for="toggleHideCompleted">Hide Completed</label>
+        </div>
+        <button id="advancedToolsBtn" aria-haspopup="true" aria-expanded="false">Advanced Tools</button>
+        <button id="undoLastBtn">Undo Last</button>
       </div>
-      <button id="undoLastBtn">Undo Last</button>
-      <button id="advancedToolsBtn" aria-haspopup="true" aria-expanded="false">Advanced Tools</button>
     </div>
 
     <!-- Advanced Tools dropdown -->
@@ -382,6 +379,7 @@
 
   <button id="backToTopBtn">Back to Top</button>
 
+  <!-- Main script (kept as-is except "defer" can't be used inline for local code) -->
   <script>
     "use strict";
 
