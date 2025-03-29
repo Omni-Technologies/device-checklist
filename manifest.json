@@ -1,21 +1,20 @@
 {
-    "name": "PDF Device Checklist Extractor",
-    "short_name": "Device Extractor",
-    "start_url": "./index.html",
-    "display": "standalone",
-    "background_color": "#f2f2f2",
-    "theme_color": "#333",
-    "icons": [
-      {
-        "src": "icons/icon-192x192.png",
-        "sizes": "192x192",
-        "type": "image/png"
-      },
-      {
-        "src": "icons/icon-512x512.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ]
-  }
-  
+  "name": "Device Report Checklist",
+  "short_name": "Device Report",
+  "start_url": "/index.html?source=pwa",
+  "display": "standalone",
+  "background_color": "#333333",
+  "theme_color": "#333333",
+  "icons": [
+    {
+      "src": "omni-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "omni-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
