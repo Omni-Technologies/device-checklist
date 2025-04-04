@@ -2,341 +2,177 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Device Checklist</title>
+  <title>Device Checklist & SAS Panel Parser</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#333">
-
   <style>
     /* ==============================
        Base / Global
        ============================== */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: Arial, sans-serif;
       background: #f9f9f9;
       color: #333;
-      margin-top: 70px; /* keeps room for the fixed header */
+      margin-top: 70px; /* room for the fixed header */
       line-height: 1.4;
     }
-    h1 {
-      text-align: center;
-      color: #222;
-      margin-bottom: 10px;
-    }
-
+    h1 { text-align: center; color: #222; margin-bottom: 10px; }
     /* ==============================
        Fixed Top Bar
        ============================== */
     #fixedTopBar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: #800000;
-      color: #fff;
-      z-index: 9999;
+      position: fixed; top: 0; left: 0; width: 100%;
+      background: #800000; color: #fff; z-index: 9999;
       border-bottom: 1px solid #650000;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      padding: 10px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2); padding: 10px 0;
     }
     #topBarContents {
-      max-width: 800px;
-      margin: 0 auto;
-      display: flex;
-      flex-wrap: wrap; /* for mobile if needed */
-      align-items: center;
-      justify-content: flex-start;
-      padding: 0 10px;
+      max-width: 800px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; align-items: center;
+      justify-content: flex-start; padding: 0 10px;
     }
-    /* Slightly bigger text for devices-remaining label */
     #deviceCount {
-      font-weight: bold;
-      font-size: 1.15em;
-      flex: 0 1 auto;
-      margin-right: 20px;
-      margin-bottom: 6px;
+      font-weight: bold; font-size: 1.15em;
+      flex: 0 1 auto; margin-right: 20px; margin-bottom: 6px;
     }
-
     /* ==============================
        Top Bar Inputs / Buttons
        ============================== */
     #searchDevices {
-      flex: 1 1 auto;
-      max-width: 180px;
-      padding: 6px 8px;
-      margin: 0 10px 6px 0;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      font-size: 0.9em;
-      color: #333;
+      flex: 1 1 auto; max-width: 180px; padding: 6px 8px;
+      margin: 0 10px 6px 0; border: 1px solid #ccc;
+      border-radius: 3px; font-size: 0.9em; color: #333;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     #searchDevices:focus {
-      outline: none;
-      border-color: #999;
+      outline: none; border-color: #999;
       box-shadow: 0 0 4px rgba(0,0,0,0.15);
     }
-
-    /* 
-       Row for hide-completed, advanced tools, undo.
-       We call it tripleActions and place them horizontally.
-    */
     .tripleActions {
-      display: flex;
-      flex: 1 1 100%;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; flex: 1 1 100%;
+      align-items: center; justify-content: space-between;
       margin-top: 8px;
     }
-    .hideCompletedContainer {
-      display: flex;
-      align-items: center;
-    }
+    .hideCompletedContainer { display: flex; align-items: center; }
     .hideCompletedContainer label {
-      cursor: pointer;
-      margin-left: 4px;
-      font-size: 0.9em;
-      color: #fff;
+      cursor: pointer; margin-left: 4px; font-size: 0.9em; color: #fff;
     }
-    .hideCompletedContainer input {
-      transform: scale(1.2);
-      cursor: pointer;
+    .hideCompletedContainer input { transform: scale(1.2); cursor: pointer; }
+    #advancedToolsBtn, #undoLastBtn {
+      border: none; background: #ecf0f1; color: #800000;
+      padding: 6px 12px; font-size: 0.9em; border-radius: 4px;
+      transition: background 0.2s ease; margin: 0 8px; cursor: pointer;
     }
-
-    #advancedToolsBtn {
-      border: none;
-      background: #ecf0f1;
-      color: #800000;
-      padding: 6px 12px;
-      font-size: 0.9em;
-      border-radius: 4px;
-      transition: background 0.2s ease;
-      margin: 0 8px;
-      cursor: pointer;
-    }
-    #advancedToolsBtn:hover {
+    #advancedToolsBtn:hover, #undoLastBtn:hover {
       background: #dde2e4;
     }
-    #undoLastBtn {
-      border: none;
-      background: #ecf0f1;
-      color: #800000;
-      border-radius: 4px;
-      padding: 6px 12px;
-      font-size: 0.9em;
-      transition: background 0.2s ease;
-      cursor: pointer;
-    }
-    #undoLastBtn:hover {
-      background: #dde2e4;
-    }
-
     /* ==============================
        Advanced Tools Dropdown
        ============================== */
     #advancedToolsDropdown {
-      position: absolute;
-      top: 60px;
-      right: 10px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      width: 300px;
-      display: none;
-      padding: 10px;
+      position: absolute; top: 60px; right: 10px;
+      background: #fff; border: 1px solid #ccc; border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2); width: 300px;
+      display: none; padding: 10px;
     }
     #advancedToolsDropdown button {
-      display: block;
-      width: 100%;
-      margin: 5px 0;
-      padding: 8px;
-      border: none;
-      border-radius: 4px;
-      background: #800000;
-      color: #fff;
-      font-size: 0.9em;
-      cursor: pointer;
+      display: block; width: 100%; margin: 5px 0; padding: 8px;
+      border: none; border-radius: 4px; background: #800000;
+      color: #fff; font-size: 0.9em; cursor: pointer;
       transition: background 0.2s ease;
     }
     #advancedToolsDropdown button:hover {
       background: #650000;
     }
-
     /* ==============================
        Header Info
        ============================== */
     #headerInfo {
-      text-align: center;
-      font-weight: bold;
-      margin: 20px auto;
-      padding: 15px;
-      background: #ecf0f1;
-      border-radius: 4px;
-      max-width: 800px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      color: #444;
+      text-align: center; font-weight: bold; margin: 20px auto;
+      padding: 15px; background: #ecf0f1; border-radius: 4px;
+      max-width: 800px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #444;
     }
-
     /* ==============================
        Upload Section
        ============================== */
     #uploadSection {
-      max-width: 600px;
-      margin: 20px auto;
-      text-align: center;
-      background: #fff;
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      padding: 20px;
+      max-width: 600px; margin: 20px auto; text-align: center;
+      background: #fff; border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 20px;
     }
-    #uploadSection p {
-      margin: 10px 0;
-      color: #555;
-    }
-    #uploadSection input[type="file"] {
-      margin: 8px 0;
-      font-size: 0.9em;
-    }
+    #uploadSection p { margin: 10px 0; color: #555; }
+    #uploadSection input[type="file"] { margin: 8px 0; font-size: 0.9em; }
     #uploadSection button {
-      margin: 5px 8px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      background: #800000;
-      color: #fff;
-      font-size: 0.9em;
-      cursor: pointer;
+      margin: 5px 8px; padding: 6px 12px;
+      border: none; border-radius: 4px; background: #800000;
+      color: #fff; font-size: 0.9em; cursor: pointer;
       transition: background 0.2s ease;
     }
-    #uploadSection button:hover {
-      background: #650000;
-    }
-    #loading {
-      text-align: center;
-      font-style: italic;
-      margin-top: 10px;
-      color: #666;
-    }
-
+    #uploadSection button:hover { background: #650000; }
+    #loading { text-align: center; font-style: italic; margin-top: 10px; color: #666; }
     /* ==============================
        Device List
        ============================== */
     #devicesOnPage {
-      max-width: 800px;
-      margin: 0 auto 5px auto;
-      color: gray;
-      text-align: right;
-      font-size: 0.9em;
-      padding: 0 10px;
+      max-width: 800px; margin: 0 auto 5px auto;
+      color: gray; text-align: right; font-size: 0.9em; padding: 0 10px;
     }
     #deviceList {
-      max-width: 800px;
-      margin: 0 auto 20px auto;
-      padding: 0;
-      list-style: none;
+      max-width: 800px; margin: 0 auto 20px auto;
+      padding: 0; list-style: none;
     }
     #deviceList li {
-      background: #fff;
-      margin: 8px 0;
-      padding: 10px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
+      background: #fff; margin: 8px 0; padding: 10px;
+      border-radius: 4px; display: flex; align-items: center;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       transition: background 0.2s ease, box-shadow 0.2s ease;
     }
     #deviceList li:hover {
-      background: #f0f0f0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      background: #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
     #deviceList input[type="checkbox"] {
-      margin-right: 10px;
-      transform: scale(1.2);
-      cursor: pointer;
-      accent-color: #800000; /* red checkbox */
+      margin-right: 10px; transform: scale(1.2); cursor: pointer;
+      accent-color: #800000;
     }
-
     /* ==============================
        Back to Top Button
        ============================== */
     #backToTopBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: none;
-      border: none;
-      background: #800000;
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      z-index: 9999;
-      transition: background 0.2s ease;
+      position: fixed; bottom: 20px; right: 20px;
+      display: none; border: none; background: #800000;
+      color: #fff; padding: 8px 12px; border-radius: 4px;
+      cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 9999; transition: background 0.2s ease;
     }
-    #backToTopBtn:hover {
-      background: #650000;
-    }
-
+    #backToTopBtn:hover { background: #650000; }
     /* ==============================
        Responsive (max-width: 600px)
        ============================== */
     @media (max-width: 600px) {
-      #deviceCount {
-        font-size: 1.2em;
-        margin-bottom: 8px;
-        margin-right: 0;
-      }
-      #searchDevices {
-        max-width: 90%;
-        margin-bottom: 12px;
-      }
-      .tripleActions {
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      /* Center the "Devices on page" label if desired. */
-      #devicesOnPage {
-        text-align: center;
-      }
-      #advancedToolsDropdown {
-        right: auto;
-        left: 50%;
-        transform: translateX(-50%);
-      }
+      #deviceCount { font-size: 1.2em; margin-bottom: 8px; margin-right: 0; }
+      #searchDevices { max-width: 90%; margin-bottom: 12px; }
+      .tripleActions { flex-wrap: wrap; justify-content: center; }
+      #devicesOnPage { text-align: center; }
+      #advancedToolsDropdown { right: auto; left: 50%; transform: translateX(-50%); }
     }
   </style>
-
-  <!-- Defer loading of libraries for slightly faster initial render -->
+  <!-- Load pdf.js and xlsx libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js" defer></script>
   <script defer>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-
 </head>
 <body>
   <!-- Fixed top bar -->
   <div id="fixedTopBar">
     <div id="topBarContents">
-      <!-- devices remaining + search on top row -->
       <div id="deviceCount">Devices Remaining: 0</div>
-      <input
-        type="text"
-        id="searchDevices"
-        placeholder="Search devices..."
-        aria-label="Search devices"
-      >
-
-      <!-- 2nd row for hide completed, advanced tools, undo -->
+      <input type="text" id="searchDevices" placeholder="Search devices..." aria-label="Search devices">
       <div class="tripleActions">
         <div class="hideCompletedContainer">
           <input type="checkbox" id="toggleHideCompleted" />
@@ -346,7 +182,6 @@
         <button id="undoLastBtn">Undo Last</button>
       </div>
     </div>
-
     <!-- Advanced Tools dropdown -->
     <div id="advancedToolsDropdown">
       <button id="markAllBtn">Mark All Completed</button>
@@ -354,70 +189,181 @@
       <button id="clearSessionBtn">Clear Session</button>
     </div>
   </div>
-
-  <!-- Main title -->
+  <!-- Main title and content -->
   <h1>Device Checklist</h1>
-
   <div id="headerInfo"></div>
-
   <div id="uploadSection">
     <p>Select one or more PDF files containing device records:</p>
     <input type="file" id="pdfInput" accept="application/pdf" multiple>
-
     <p>Select one or more Excel files containing device records:</p>
     <input type="file" id="excelInput" accept=".xlsx, .xls" multiple>
-
     <p>Import / Export Device Checklist:</p>
     <button id="exportFileBtn">Export to File</button>
     <button id="importFileBtn">Import from File</button>
   </div>
-
   <div id="loading"></div>
-
   <div id="devicesOnPage">(Devices on page: 0)</div>
   <ul id="deviceList"></ul>
-
   <button id="backToTopBtn">Back to Top</button>
-
-  <!-- Main script (kept as-is except "defer" can't be used inline for local code) -->
+  <!-- Main Script -->
   <script>
     "use strict";
 
-    let deviceChecklistData = {
-      header: "",
-      devices: []
-    };
+    let deviceChecklistData = { header: "", devices: [] };
     let undoStack = [];
     let hideCompleted = false;
 
+    // Session management functions
     function saveSession() {
       localStorage.setItem("deviceChecklist", JSON.stringify(deviceChecklistData));
     }
-
     function loadSession() {
       const data = localStorage.getItem("deviceChecklist");
-      if (data) {
-        deviceChecklistData = JSON.parse(data);
-        return true;
-      }
+      if (data) { deviceChecklistData = JSON.parse(data); return true; }
       return false;
     }
-
     function clearSession() {
       localStorage.removeItem("deviceChecklist");
       deviceChecklistData = { header: "", devices: [] };
       undoStack = [];
     }
 
-    function extractHeaderAndDevices(text) {
-      // (Unchanged parsing logic)
-      text = text.replace(/Page \d+\s*of\s*\d+/gi, '');
-      let lines = text
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+    /*******************
+     * SAS Panel Parsing Functions
+     *******************/
+    function extractDevicesFromSASPanelText(text) {
+      let devices = [];
+      // 1. Primary extraction: devices with a 10-digit serial
+      const regexSerial = /(?:Device\s+)?(\d+):?\s+([\s\S]*?)\s+(\d{10})(?=\s+(?:Device\s+)?\d+|\s*$)/gi;
+      let match;
+      while ((match = regexSerial.exec(text)) !== null) {
+        devices.push({
+          deviceNumber: match[1].trim(),
+          description: match[2].trim(),
+          serialNumber: match[3].trim(),
+          raw: match[0].trim()
+        });
+      }
+      // Split text into lines for additional extraction
+      const lines = text.split(/\r?\n/);
+      // 2. Extract Annunciator device from the "Annunciators" block.
+      // Look for a line beginning with "LCD C 0 OREGON LIBRARY FIRE PANEL NORMAL" followed by 1–2 digits.
+      const regexAnnunciator = /^(LCD\s+C\s+0\s+OREGON\s+LIBRARY\s+FIRE\s+PANEL\s+NORMAL)\s*(\d{1,2})$/i;
+      lines.forEach(line => {
+        line = line.trim();
+        let m = regexAnnunciator.exec(line);
+        if (m && !devices.some(d => d.raw === line)) {
+          devices.push({
+            deviceNumber: m[2].trim(),
+            description: m[1].trim(),
+            serialNumber: "",
+            raw: line
+          });
+        }
+      });
+      // 3. Extract NAC devices from the NAC block.
+      // Look for lines matching "01 Genesis Audible Visible Silence B NAC 1"
+      const regexNAC = /^(0?\d{1,2})\s+Genesis\s+Audible\s+Visible\s+Silence\s+B\s+NAC\s+(\d+)$/i;
+      lines.forEach(line => {
+        line = line.trim();
+        let m = regexNAC.exec(line);
+        if (m && !devices.some(d => d.raw === line)) {
+          devices.push({
+            deviceNumber: m[1].trim(),
+            description: `Genesis Audible Visible Silence B NAC ${m[2].trim()}`,
+            serialNumber: "",
+            raw: line
+          });
+        }
+      });
+      // 4. Generic additional extraction: skip lines with a 10-digit number or containing "hours", "minutes", "Serial:" or "Off".
+      const regexAdditional = /^(?:Device\s*-\s*)?(\d{1,2})\s+(.+)$/i;
+      lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        if (/\d{10}/.test(line)) return;
+        if (/hours/i.test(line) || /minutes/i.test(line) || /Serial:/i.test(line) || /^Off$/i.test(line)) return;
+        let m = regexAdditional.exec(line);
+        if (m) {
+          let devNum = m[1].trim();
+          let desc = m[2].trim();
+          if (/off/i.test(desc)) return;
+          if (!devices.some(d => d.raw === line)) {
+            devices.push({
+              deviceNumber: devNum,
+              description: desc,
+              serialNumber: "",
+              raw: line
+            });
+          }
+        }
+      });
+      // 5. Fallback: If fewer than 5 "no‑serial" devices were found, try to extract from the final pages.
+      let noSerialDevices = devices.filter(d => d.serialNumber === "");
+      if (noSerialDevices.length < 5) {
+        // Look for final section markers (e.g., "Page: 20" or later)
+        let finalSectionMatch = text.match(/Page:\s*\d+\s*Oregon_Library[\s\S]*$/i);
+        if (finalSectionMatch) {
+          let finalSection = finalSectionMatch[0];
+          // Re-run Annunciator extraction on finalSection
+          let m = finalSection.match(regexAnnunciator);
+          if (m && !devices.some(d => d.description.includes("OREGON LIBRARY FIRE PANEL NORMAL"))) {
+            devices.push({
+              deviceNumber: m[2].trim(),
+              description: m[1].trim(),
+              serialNumber: "",
+              raw: m[0].trim()
+            });
+          }
+          // Re-run NAC extraction on finalSection
+          let nacMatches;
+          while ((nacMatches = regexNAC.exec(finalSection)) !== null) {
+            if (!devices.some(d => d.raw === nacMatches[0].trim())) {
+              devices.push({
+                deviceNumber: nacMatches[1].trim(),
+                description: `Genesis Audible Visible Silence B NAC ${nacMatches[2].trim()}`,
+                serialNumber: "",
+                raw: nacMatches[0].trim()
+              });
+            }
+          }
+        }
+      }
+      return devices;
+    }
 
+    // Clean device description: remove any leading "Device [number]:" text.
+    function cleanDeviceDescription(desc) {
+      desc = desc.replace(/^Device\s+\d+:?\s*/i, '');
+      const keywords = ["Smoke", "Supervisory", "Heat", "Supv", "Relay", "Pull", "Monitor", "Genesis", "Water", "Auto", "Duct"];
+      let earliestIndex = -1;
+      keywords.forEach(keyword => {
+        let index = desc.indexOf(keyword);
+        if (index !== -1 && (earliestIndex === -1 || index < earliestIndex)) {
+          earliestIndex = index;
+        }
+      });
+      if (earliestIndex !== -1) {
+        return desc.substring(earliestIndex).trim();
+      }
+      return desc.trim();
+    }
+
+    /*******************
+     * Extraction Function
+     *******************/
+    function extractHeaderAndDevices(text) {
+      text = text.replace(/Page \d+\s*of\s*\d+/gi, '');
+      // If SAS Panel configuration is detected, use SAS extraction.
+      if (text.toLowerCase().includes("sas panel")) {
+        let devices = extractDevicesFromSASPanelText(text);
+        let header = "SAS Panel Configuration";
+        return { header, devices };
+      }
+      // Fallback: generic extraction logic
+      let lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
       let header = "";
+      let devices = [];
       if (lines.length >= 3 && lines[0].startsWith("Project")) {
         header = lines[0] + " " + lines[1] + " " + lines[2];
         if (lines[3] && lines[3].includes("Device Barcode Label")) {
@@ -433,11 +379,9 @@
         header = lines[0];
         lines = lines.slice(1);
       }
-
       const serialRegex = /^\d{3}:\d{3}:\d{4}$/;
       let rawDevices = [];
       let currentDevice = [];
-
       for (const line of lines) {
         if (serialRegex.test(line)) {
           currentDevice.push(line);
@@ -450,7 +394,6 @@
       if (currentDevice.length > 0) {
         rawDevices.push(currentDevice.join(" "));
       }
-
       if (rawDevices.length > 0 && rawDevices[0].startsWith("Version :")) {
         const headerKey = "Device Type LRM SLC System Address";
         const idx = rawDevices[0].indexOf(headerKey);
@@ -458,114 +401,172 @@
           rawDevices[0] = rawDevices[0].substring(idx + headerKey.length).trim();
         }
       }
-
-      const devices = rawDevices.map(txt => ({ text: txt, checked: false }));
+      devices = rawDevices.map(txt => ({ text: txt, checked: false }));
       return { header, devices };
     }
 
-    function displayHeader(header) {
-      document.getElementById("headerInfo").textContent = header;
-    }
-
+    /*******************
+     * Display Functions
+     *******************/
     function updateDeviceCount() {
       const remaining = deviceChecklistData.devices.filter(d => !d.checked).length;
       document.getElementById("deviceCount").textContent = "Devices Remaining: " + remaining;
     }
-
-    function formatDeviceText(rawText) {
-      const textLines = rawText.split(/\n+/).map(l => l.trim());
-      let firstLine = "";
-      let remainder = "";
-
-      if (textLines.length && /^\d{3}:\d{3}:\d{4}$/.test(textLines[0])) {
-        firstLine = textLines[0];
-        remainder = textLines.slice(1).join(" ");
-      } else {
-        remainder = textLines.join(" ");
-      }
-
-      const words = remainder.split(/\s+/).filter(Boolean);
-      let uppercaseChunk = [];
-      let i = 0;
-      for (; i < words.length; i++) {
-        if (/[a-z]/.test(words[i])) break;
-        uppercaseChunk.push(words[i]);
-      }
-      const secondLine = uppercaseChunk.join(" ");
-      const rest = words.slice(i).join(" ");
-
-      const line1 = firstLine ? `<strong>${firstLine}</strong>` : "";
-      const line2 = secondLine ? `<span style="font-weight:bold;">${secondLine}</span>` : "";
-      const line3 = rest ? `<em style="display:block; margin-top:3px;">Misc Info: ${rest}</em>` : "";
-
-      return [line1, line2, line3].filter(Boolean).join("<br>");
+    function displayHeader(header) {
+      document.getElementById("headerInfo").textContent = header;
     }
-
     function displayDevices(devices) {
       const searchTerm = document.getElementById("searchDevices").value.toLowerCase();
-
-      const filteredDevices = devices
-        .map((device, index) => ({ device, index }))
-        .filter(item => {
-          const matchesSearch = !searchTerm || item.device.text.toLowerCase().includes(searchTerm);
-          if (hideCompleted && item.device.checked) {
-            return false;
-          }
-          return matchesSearch;
-        });
-
+      const filteredDevices = devices.map((device, index) => ({ device, index })).filter(item => {
+        let textToSearch = "";
+        if (item.device.deviceNumber) {
+          textToSearch = (item.device.description + " " + item.device.serialNumber).toLowerCase();
+        } else {
+          textToSearch = item.device.text.toLowerCase();
+        }
+        return (!searchTerm || textToSearch.includes(searchTerm)) && (hideCompleted && item.device.checked ? false : true);
+      });
       const deviceList = document.getElementById("deviceList");
       deviceList.innerHTML = "";
-
-      /* Update the small label to show how many devices are on the page */
       document.getElementById("devicesOnPage").textContent = `(Devices on page: ${filteredDevices.length})`;
-
       filteredDevices.forEach(item => {
         const device = item.device;
         const index = item.index;
-
         const isChecked = device.checked ? "checked" : "";
-        const textStyle = device.checked ? "text-decoration: line-through;" : "";
-        const formatted = formatDeviceText(device.text);
-
+        let formatted = "";
+        if (device.deviceNumber) {
+          const cleanedDesc = cleanDeviceDescription(device.description);
+          formatted = `${cleanedDesc}<br><em>Serial: ${device.serialNumber}</em>`;
+        } else {
+          formatted = device.text;
+        }
         const li = document.createElement("li");
         li.setAttribute("role", "listitem");
-
         li.innerHTML = `
           <input type="checkbox" id="device-${index}" ${isChecked}>
-          <label for="device-${index}" style="${textStyle}">
+          <label for="device-${index}" style="${device.checked ? 'text-decoration: line-through;' : ''}">
             ${formatted}
           </label>
         `;
-
         li.querySelector("input[type='checkbox']").addEventListener("change", (e) => {
           const oldValue = deviceChecklistData.devices[index].checked;
           const newValue = e.target.checked;
           undoStack.push({ index, oldValue, newValue });
-
           deviceChecklistData.devices[index].checked = newValue;
           saveSession();
           updateDeviceCount();
           displayDevices(deviceChecklistData.devices);
         });
-
         deviceList.appendChild(li);
       });
-
       updateDeviceCount();
     }
 
-    function undoLastChange() {
-      if (!undoStack.length) {
-        alert("No action to undo!");
-        return;
-      }
+    /*******************
+     * File Parsing Functions
+     *******************/
+    function parsePDF(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = function() {
+          const typedarray = new Uint8Array(this.result);
+          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            let pages = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+              pages.push(pdf.getPage(i).then(page => page.getTextContent()));
+            }
+            Promise.all(pages).then(all => {
+              let fullText = "";
+              all.forEach(page => {
+                page.items.forEach(item => {
+                  fullText += item.str + "\n";
+                });
+              });
+              resolve(extractHeaderAndDevices(fullText));
+            }).catch(reject);
+          }).catch(reject);
+        };
+        fr.readAsArrayBuffer(file);
+      });
+    }
+    function parseExcel(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const firstSheetName = wb.SheetNames[0];
+          const ws = wb.Sheets[firstSheetName];
+          const devices = [];
+          let row = 7;
+          while (true) {
+            const cellB = ws["B" + row];
+            if (!cellB || !cellB.v) break;
+            let deviceText = "";
+            ["B", "C", "D", "E", "F", "G"].forEach(col => {
+              const cell = ws[col + row];
+              if (cell && cell.v) {
+                deviceText += cell.v + " ";
+              }
+            });
+            devices.push({ text: deviceText.trim(), checked: false });
+            row++;
+          }
+          resolve({ header: "", devices });
+        };
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(file);
+      });
+    }
+
+    /*******************
+     * Event Listeners & Session Management
+     *******************/
+    document.getElementById("undoLastBtn").addEventListener("click", function() {
+      if (!undoStack.length) { alert("No action to undo!"); return; }
       const { index, oldValue } = undoStack.pop();
       deviceChecklistData.devices[index].checked = oldValue;
       saveSession();
       displayDevices(deviceChecklistData.devices);
+    });
+    document.getElementById("markAllBtn").addEventListener("click", function() {
+      deviceChecklistData.devices.forEach(d => d.checked = true);
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    });
+    document.getElementById("clearAllBtn").addEventListener("click", function() {
+      deviceChecklistData.devices.forEach(d => d.checked = false);
+      saveSession();
+      displayDevices(deviceChecklistData.devices);
+    });
+    document.getElementById("clearSessionBtn").addEventListener("click", function() {
+      if (confirm("Are you sure you want to clear the saved session?")) {
+        clearSession();
+        displayHeader("");
+        displayDevices([]);
+      }
+    });
+    document.getElementById("toggleHideCompleted").addEventListener("change", (e) => {
+      hideCompleted = e.target.checked;
+      displayDevices(deviceChecklistData.devices);
+    });
+    document.getElementById("searchDevices").addEventListener("input", () => {
+      displayDevices(deviceChecklistData.devices);
+    });
+    window.addEventListener("load", () => {
+      if (loadSession()) {
+        displayHeader(deviceChecklistData.header);
+        displayDevices(deviceChecklistData.devices);
+      }
+    });
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('ServiceWorker registered:', reg.scope))
+          .catch(err => console.log('ServiceWorker registration failed:', err));
+      });
     }
-
+    document.getElementById("exportFileBtn").addEventListener("click", exportListToFile);
     function exportListToFile() {
       const dataStr = JSON.stringify(deviceChecklistData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -576,8 +577,11 @@
       link.click();
       URL.revokeObjectURL(url);
     }
-
-    function importListFromFile(e) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file || !file.name.toLowerCase().endsWith('.json')) {
         alert("Please select a .json file.");
@@ -598,131 +602,19 @@
         }
       };
       reader.readAsText(file);
-    }
-
-    function parsePDF(file) {
-      return new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = function() {
-          const typedarray = new Uint8Array(this.result);
-          pdfjsLib.getDocument(typedarray).promise
-            .then(pdf => {
-              const pages = [];
-              for (let i = 1; i <= pdf.numPages; i++) {
-                pages.push(pdf.getPage(i).then(page => page.getTextContent()));
-              }
-              Promise.all(pages).then(all => {
-                let fullText = "";
-                all.forEach(page => {
-                  page.items.forEach(item => {
-                    fullText += item.str + "\n";
-                  });
-                });
-                resolve(extractHeaderAndDevices(fullText));
-              }).catch(err => reject(err));
-            })
-            .catch(err => reject(err));
-        };
-        fr.readAsArrayBuffer(file);
-      });
-    }
-
-    function parseExcel(file) {
-      return new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = function(e) {
-          const data = new Uint8Array(e.target.result);
-          const wb = XLSX.read(data, { type: 'array' });
-          const firstSheetName = wb.SheetNames[0];
-          const ws = wb.Sheets[firstSheetName];
-          const devices = [];
-          let row = 7;
-          while(true) {
-            const cellB = ws["B" + row];
-            if (!cellB || !cellB.v) break;
-            let deviceText = "";
-            ["B","C","D","E","F","G"].forEach(col => {
-              const cell = ws[col + row];
-              if (cell && cell.v) {
-                deviceText += cell.v + " ";
-              }
-            });
-            devices.push({ text: deviceText.trim(), checked: false });
-            row++;
-          }
-          resolve({ header: "", devices });
-        };
-        fr.onerror = reject;
-        fr.readAsArrayBuffer(file);
-      });
-    }
-
-    // Event handlers
-    document.getElementById("undoLastBtn").addEventListener("click", undoLastChange);
-    document.getElementById("markAllBtn").addEventListener("click", () => {
-      deviceChecklistData.devices.forEach(d => d.checked = true);
-      saveSession();
-      displayDevices(deviceChecklistData.devices);
     });
-    document.getElementById("clearAllBtn").addEventListener("click", () => {
-      deviceChecklistData.devices.forEach(d => d.checked = false);
-      saveSession();
-      displayDevices(deviceChecklistData.devices);
-    });
-    document.getElementById("clearSessionBtn").addEventListener("click", () => {
-      if (confirm("Are you sure you want to clear the saved session?")) {
-        clearSession();
-        displayHeader("");
-        displayDevices([]);
-      }
-    });
-    document.getElementById("toggleHideCompleted").addEventListener("change", (e) => {
-      hideCompleted = e.target.checked;
-      displayDevices(deviceChecklistData.devices);
-    });
-    document.getElementById("searchDevices").addEventListener("input", () => {
-      displayDevices(deviceChecklistData.devices);
-    });
-    window.addEventListener("load", () => {
-      if (loadSession()) {
-        displayHeader(deviceChecklistData.header);
-        displayDevices(deviceChecklistData.devices);
-      }
-    });
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('ServiceWorker registered:', reg.scope))
-          .catch(err => console.log('ServiceWorker registration failed:', err));
-      });
-    }
-
-    document.getElementById("exportFileBtn").addEventListener("click", exportListToFile);
-
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.json';
-    fileInput.style.display = 'none';
-    fileInput.addEventListener('change', importListFromFile);
-    document.body.appendChild(fileInput);
-
-    document.getElementById("importFileBtn").addEventListener("click", () => {
+    document.getElementById("importFileBtn").addEventListener("click", function() {
       fileInput.value = '';
       fileInput.click();
     });
-
-    document.getElementById("pdfInput").addEventListener("change", (e) => {
+    document.getElementById("pdfInput").addEventListener("change", function(e) {
       const files = e.target.files;
-      if (!files || !files.length) {
-        alert("Please upload at least one valid PDF file.");
-        return;
-      }
+      if (!files.length) { alert("Please upload at least one valid PDF file."); return; }
       const loading = document.getElementById("loading");
       loading.textContent = "Loading PDF(s) ...";
       const parsePromises = [];
-      for (let i=0; i<files.length; i++){
-        if (files[i].type === "application/pdf"){
+      for (let i = 0; i < files.length; i++) {
+        if (files[i].type === "application/pdf") {
           parsePromises.push(parsePDF(files[i]));
         }
       }
@@ -746,20 +638,16 @@
           loading.textContent = "Error loading one or more PDFs.";
         });
     });
-
-    document.getElementById("excelInput").addEventListener("change", (e) => {
+    document.getElementById("excelInput").addEventListener("change", function(e) {
       const files = e.target.files;
-      if (!files || !files.length) {
-        alert("Please upload at least one valid Excel file.");
-        return;
-      }
+      if (!files.length) { alert("Please upload at least one valid Excel file."); return; }
       const loading = document.getElementById("loading");
       loading.textContent = "Loading Excel file(s) ...";
       const parsePromises = [];
-      for (let i=0; i<files.length; i++){
+      for (let i = 0; i < files.length; i++) {
         const f = files[i];
         const lower = f.name.toLowerCase();
-        if (lower.endsWith(".xlsx") || lower.endsWith(".xls")){
+        if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
           parsePromises.push(parseExcel(f));
         }
       }
@@ -783,7 +671,6 @@
           loading.textContent = "Error loading one or more Excel files.";
         });
     });
-
     const advancedToolsBtn = document.getElementById('advancedToolsBtn');
     const advancedToolsDropdown = document.getElementById('advancedToolsDropdown');
     advancedToolsBtn.addEventListener('click', () => {
@@ -801,7 +688,6 @@
         advancedToolsBtn.setAttribute('aria-expanded', 'false');
       }
     });
-
     const backToTopBtn = document.getElementById("backToTopBtn");
     window.addEventListener("scroll", () => {
       if (document.documentElement.scrollTop > 400 || document.body.scrollTop > 400) {
