@@ -27,8 +27,8 @@
       --box-shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
       --box-shadow-medium: 0 2px 5px rgba(0, 0, 0, 0.15);
       --box-shadow-heavy: 0 2px 8px rgba(0, 0, 0, 0.2);
-      --highlight-bg: #fff3cd; /* Background for search term highlight */
-      --highlight-text: #664d03; /* Text color for search term highlight */
+      --highlight-bg: #fff3cd;
+      --highlight-text: #664d03;
       --transition-speed: 0.2s ease;
     }
 
@@ -36,9 +36,9 @@
        Base / Global Styles
        ============================== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; } /* Enable smooth scrolling */
+    html { scroll-behavior: smooth; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--background-light);
       color: var(--text-dark);
       margin-top: 80px;
@@ -47,15 +47,14 @@
     }
     h1 { text-align: center; color: #222; margin: 15px 0; }
     button { cursor: pointer; }
-    button:disabled { cursor: not-allowed; opacity: 0.6; } /* General disabled style */
+    button:disabled { cursor: not-allowed; opacity: 0.6; }
 
-    /* Search term highlight style */
     .search-highlight {
         background-color: var(--highlight-bg);
         color: var(--highlight-text);
         border-radius: 2px;
-        padding: 0.1em 0; /* Minimal padding */
-        font-weight: 600; /* Make highlight bolder */
+        padding: 0.1em 0;
+        font-weight: 600;
     }
 
     /* ==============================
@@ -111,7 +110,6 @@
     #advancedToolsBtn:not(:disabled):hover, #undoLastBtn:not(:disabled):hover {
       background: #dde2e4; transform: translateY(-1px);
     }
-    /* Keep disabled style consistent */
     #undoLastBtn:disabled { transform: none; }
 
     /* ==============================
@@ -183,7 +181,7 @@
       text-align: center; font-style: italic; margin-top: 15px;
       color: var(--text-light); min-height: 1.5em; transition: color 0.3s ease;
     }
-    #loading.error { /* Style for error messages */
+    #loading.error {
         color: var(--primary-color);
         font-weight: bold;
     }
@@ -197,10 +195,10 @@
     }
     #deviceList {
       max-width: 800px; margin: 0 auto 20px auto; padding: 0; list-style: none;
-      position: relative; /* For empty message positioning */
-      min-height: 100px; /* Ensure space for empty message */
+      position: relative;
+      min-height: 100px;
     }
-    #deviceList:empty::after { /* Empty state message */
+    #deviceList:empty::after {
         content: "Upload a PDF/Excel report or import a .json checklist to begin.";
         position: absolute;
         top: 20px;
@@ -229,14 +227,14 @@
     #deviceList label em {
       color: var(--text-medium); font-size: 0.9em; display: block; margin-top: 4px;
     }
+    /* For Excel devices, we now display the full string directly */
     #deviceList label.checked { text-decoration: line-through; color: var(--text-light); }
     #deviceList label.checked em { text-decoration: none; }
-    #deviceList label.checked .search-highlight { /* Adjust highlight for checked items */
+    #deviceList label.checked .search-highlight {
         text-decoration: line-through;
-        background-color: #e9ecef; /* Lighter background when checked */
+        background-color: #e9ecef;
         color: var(--text-light);
     }
-
 
     /* ==============================
        Back to Top Button
@@ -266,7 +264,7 @@
       #advancedToolsDropdown.open { transform: translateX(50%) translateY(0); }
       #uploadSection { margin: 20px 10px; padding: 20px 15px; }
       #deviceList { margin: 0 10px 20px 10px; }
-      #deviceList:empty::after { font-size: 0.9em; } /* Adjust empty message size */
+      #deviceList:empty::after { font-size: 0.9em; }
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js" defer></script>
@@ -287,7 +285,8 @@
           <label for="toggleHideCompleted">Hide Completed</label>
         </div>
         <button id="advancedToolsBtn" aria-haspopup="true" aria-expanded="false">Advanced Tools</button>
-        <button id="undoLastBtn" disabled>Undo Last</button> </div>
+        <button id="undoLastBtn" disabled>Undo Last</button>
+      </div>
     </div>
     <div id="advancedToolsDropdown">
       <button id="markAllBtn">Mark All Completed</button>
@@ -304,7 +303,7 @@
     <input type="file" id="pdfInput" accept="application/pdf" multiple data-button-id="pdfUploadBtn">
     <p>Select Excel device report(s):</p>
     <input type="file" id="excelInput" accept=".xlsx, .xls" multiple data-button-id="excelUploadBtn">
-     <p>Import / Export Device Checklist:</p>
+    <p>Import / Export Device Checklist:</p>
     <div class="importExportActions">
         <button id="exportFileBtn">Export to File</button>
         <button id="importFileBtn">Import from File</button>
@@ -315,7 +314,8 @@
 
   <div id="devicesOnPage">(Displaying: 0)</div>
 
-  <ul id="deviceList"></ul> <button id="backToTopBtn" title="Scroll back to top">Back to Top</button>
+  <ul id="deviceList"></ul>
+  <button id="backToTopBtn" title="Scroll back to top">Back to Top</button>
 
   <script defer>
     "use strict";
@@ -330,7 +330,7 @@
       let deviceChecklistData = { header: "", devices: [] };
       let undoStack = [];
       let hideCompleted = false;
-      let searchDebounceTimeout = null; // For debouncing search input
+      let searchDebounceTimeout = null;
 
       // === DOM Element References ===
       const deviceCountEl = document.getElementById("deviceCount");
@@ -357,11 +357,6 @@
       fileImportInputEl.style.display = 'none';
 
       // === Utility Functions ===
-      /**
-       * Debounce function to limit how often a function is called.
-       * @param {Function} func The function to debounce.
-       * @param {number} delay Debounce delay in milliseconds.
-       */
       function debounce(func, delay) {
           return function(...args) {
               clearTimeout(searchDebounceTimeout);
@@ -371,15 +366,9 @@
           };
       }
 
-      /**
-        * Escapes special characters in a string for use in a RegExp.
-        * @param {string} string - The input string.
-        * @returns {string} The escaped string.
-        */
       function escapeRegExp(string) {
-          return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+          return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       }
-
 
       // === Session Management Functions ===
       function saveSession() {
@@ -398,7 +387,6 @@
             deviceChecklistData = JSON.parse(data);
             if (!deviceChecklistData.header) deviceChecklistData.header = "";
             if (!Array.isArray(deviceChecklistData.devices)) deviceChecklistData.devices = [];
-            // Ensure 'checked' property exists
             deviceChecklistData.devices = deviceChecklistData.devices.map(d => ({ ...d, checked: d.checked || false }));
             return true;
           } catch (e) {
@@ -416,13 +404,11 @@
         updateUndoButtonState();
         pdfInputEl.value = '';
         excelInputEl.value = '';
-        searchInputEl.value = ''; // Clear search input as well
+        searchInputEl.value = '';
       }
 
       // === SAS Panel Parsing Functions (CORE LOGIC - UNCHANGED) ===
       function extractDevicesFromSASPanelText(text) {
-         // --- CORE SAS PARSING LOGIC - UNCHANGED ---
-         // (Same implementation as provided in the previous response)
          let devices = [];
          const regexSerial = /(?:Device\s+)?(\d+):?\s+([\s\S]*?)\s+(\d{10})(?=\s+(?:Device\s+)?\d+|\s*$)/gi;
          let match;
@@ -476,14 +462,10 @@
          const uniqueDevicesMap = new Map();
          devices.forEach(device => { const key = device.serialNumber ? `${device.description}_${device.serialNumber}` : device.raw; if (!uniqueDevicesMap.has(key)) { uniqueDevicesMap.set(key, device); } });
          return Array.from(uniqueDevicesMap.values());
-         // --- END OF UNCHANGED SAS LOGIC ---
       }
+
       function cleanDeviceDescription(desc) {
-          // --- CORE CLEANING LOGIC - UNCHANGED ---
-          // Removes "Device X:" prefix and tries to find the start of the real description using keywords.
           let cleanedDesc = desc.replace(/^Device\s+\d+:?\s*/i, '');
-          // Keywords hint at the start of the meaningful part of the description.
-          // Order might matter slightly if multiple keywords appear early.
           const keywords = ["Smoke", "Supervisory", "Heat", "Supv", "Relay", "Pull", "Monitor", "Genesis", "Water", "Auto", "Duct", "LCD", "NAC"];
           let earliestIndex = -1;
           keywords.forEach(keyword => {
@@ -496,12 +478,10 @@
           });
           if (earliestIndex !== -1) { return cleanedDesc.substring(earliestIndex).trim(); }
           return cleanedDesc.trim();
-          // --- END OF UNCHANGED CLEANING LOGIC ---
       }
 
-      // === General Extraction Function (CORE LOGIC - UNCHANGED) ===
-      function extractHeaderAndDevices(text) {
-        // --- CORE EXTRACTION LOGIC - UNCHANGED ---
+      // === Default PDF Extraction Function (now named "signatureBarcodeWorksheet") ===
+      function signatureBarcodeWorksheet(text) {
         text = text.replace(/Page \d+\s*of\s*\d+/gi, '');
         if (text.toLowerCase().includes("sas panel configuration") || text.toLowerCase().includes("oregon library fire panel")) {
             const devices = extractDevicesFromSASPanelText(text);
@@ -538,41 +518,29 @@
                 raw: txt, checked: false
             }));
         return { header, devices };
-        // --- END OF UNCHANGED EXTRACTION LOGIC ---
       }
 
+      // === General Extraction Function used for non-PDF files (CORE LOGIC - UNCHANGED) ===
+      // (This function is still used in Excel processing and file import for non-SAS Panel types.)
+      // Note: Excel parsing uses its own regex, so it remains unchanged.
+      
       // === UI Display Functions ===
       function updateDeviceCount() {
         const remaining = deviceChecklistData.devices.filter(d => !d.checked).length;
         const total = deviceChecklistData.devices.length;
-        // Text content updated, aria-live will handle announcement
         deviceCountEl.textContent = `Remaining: ${remaining} / ${total}`;
       }
       function updateUndoButtonState() {
-        undoLastBtnEl.disabled = undoStack.length === 0;
+        undoLastBtnEl.disabled = (undoStack.length === 0);
       }
       function displayHeader(header) {
         headerInfoEl.textContent = header || "No project information loaded.";
       }
-
-      /**
-       * Sets the loading message and optionally styles it as an error.
-       * @param {string} message The message to display.
-       * @param {boolean} [isError=false] If true, apply error styling.
-       */
-       function setLoadingMessage(message, isError = false) {
+      function setLoadingMessage(message, isError = false) {
             loadingEl.textContent = message;
-            if (isError) {
-                loadingEl.classList.add('error');
-            } else {
-                loadingEl.classList.remove('error');
-            }
-       }
-
-      /**
-       * Renders the list of devices. Includes filtering, empty state, and search highlighting.
-       */
-      function displayDevices() { // Removed 'devices' param, always uses global
+            isError ? loadingEl.classList.add('error') : loadingEl.classList.remove('error');
+      }
+      function displayDevices() {
         const devices = deviceChecklistData.devices;
         const searchTerm = searchInputEl.value.trim().toLowerCase();
         const fragment = document.createDocumentFragment();
@@ -587,15 +555,7 @@
           });
 
         devicesOnPageEl.textContent = `(Displaying: ${filteredDevices.length})`;
-        deviceListEl.innerHTML = ""; // Clear previous list
-
-        // Setup regex for highlighting only if there's a search term
-        let highlightRegex = null;
-        if (searchTerm) {
-            // Escape special characters in search term for safe regex use
-            const escapedSearchTerm = escapeRegExp(searchTerm);
-            highlightRegex = new RegExp(`(${escapedSearchTerm})`, 'gi'); // 'g' for global, 'i' for case-insensitive
-        }
+        deviceListEl.innerHTML = "";
 
         filteredDevices.forEach(({ device, originalIndex }) => {
           const li = document.createElement("li");
@@ -609,55 +569,38 @@
 
           const label = document.createElement("label");
           label.htmlFor = `device-${originalIndex}`;
-          if(device.checked) label.classList.add('checked');
-
+          
           let labelHTML = "";
-          if (device.description) {
+          if (device.fromExcel && device.text) {
+            labelHTML = device.text;
+          } else if (device.description) {
+            // For PDF devices (signature barcode worksheet), output the cleaned description only.
             const cleanedDesc = cleanDeviceDescription(device.description || "No Description");
             labelHTML = `${cleanedDesc}`;
-            if (device.serialNumber) labelHTML += `<br><em>Serial: ${device.serialNumber}</em>`;
-            else if (device.deviceNumber) labelHTML += `<br><em>Dev #: ${device.deviceNumber}</em>`;
           } else {
             labelHTML = device.text || "Invalid device data";
           }
-
-          // Apply highlighting if needed
-          if (highlightRegex && labelHTML) {
-                // IMPORTANT: Replace within the text content, preserving HTML tags (<br>, <em>)
-                // This is a simplified approach; complex HTML needs more robust parsing.
-                labelHTML = labelHTML.replace(highlightRegex, `<span class="search-highlight">$1</span>`);
-          }
-
           label.innerHTML = labelHTML;
 
-          // --- Checkbox Change Listener (CORE LOGIC - UNCHANGED) ---
           checkbox.addEventListener("change", (e) => {
             const index = parseInt(e.target.dataset.index, 10);
             const currentDevice = deviceChecklistData.devices[index];
-            if (!currentDevice) return; // Safety check
-
+            if (!currentDevice) return;
             const oldValue = currentDevice.checked;
             const newValue = e.target.checked;
-
             undoStack.push({ index, oldValue, newValue });
             currentDevice.checked = newValue;
-
             saveSession();
             updateDeviceCount();
-            // Update label style directly
-            if (newValue) label.classList.add('checked');
-            else label.classList.remove('checked');
-
-            // Re-filter if hiding completed items
-            if (hideCompleted) displayDevices(); // Re-render the whole list if hiding
+            newValue ? label.classList.add('checked') : label.classList.remove('checked');
+            if (hideCompleted) displayDevices();
           });
 
           li.appendChild(checkbox);
           li.appendChild(label);
 
-          // Click on li toggles checkbox
           li.addEventListener('click', (e) => {
-             if (e.target !== checkbox && e.target !== label && !label.contains(e.target)) { // Check if click wasn't on label content either
+             if (e.target !== checkbox && e.target !== label && !label.contains(e.target)) {
                  checkbox.checked = !checkbox.checked;
                  checkbox.dispatchEvent(new Event('change'));
              }
@@ -666,30 +609,29 @@
           fragment.appendChild(li);
         });
 
-        deviceListEl.appendChild(fragment); // Append all items at once
+        deviceListEl.appendChild(fragment);
         updateDeviceCount();
         updateUndoButtonState();
       }
-       // Debounced version of displayDevices for search input
       const debouncedDisplayDevices = debounce(displayDevices, SEARCH_DEBOUNCE_DELAY);
 
-
-      // === File Parsing Functions (CORE PDF/EXCEL LOGIC - UNCHANGED) ===
+      // === File Parsing Functions ===
       function parsePDF(file) {
         return new Promise((resolve, reject) => {
           const fileReader = new FileReader();
           fileReader.onload = function() {
             const typedarray = new Uint8Array(this.result);
-            setLoadingMessage(`Parsing PDF: ${file.name}...`); // Update status
+            setLoadingMessage(`Parsing PDF: ${file.name}...`);
             pdfjsLib.getDocument(typedarray).promise.then(pdf => {
               const pagePromises = Array.from({ length: pdf.numPages }, (_, i) =>
                  pdf.getPage(i + 1).then(page => page.getTextContent())
               );
               Promise.all(pagePromises).then(pageContents => {
                 let fullText = pageContents.map(content => content?.items?.map(item => item?.str || '').join("\n") || '').join("\n");
-                 setLoadingMessage(`Extracting devices from ${file.name}...`); // Update status
+                 setLoadingMessage(`Extracting devices from ${file.name}...`);
                  try {
-                    const extractedData = extractHeaderAndDevices(fullText); // CORE CALL
+                    // Use the default PDF parser, now named "signatureBarcodeWorksheet"
+                    const extractedData = signatureBarcodeWorksheet(fullText);
                     resolve(extractedData);
                  } catch (extractError) { reject(`Extraction failed: ${extractError.message}`); }
               }).catch(reject);
@@ -699,71 +641,79 @@
           fileReader.readAsArrayBuffer(file);
         });
       }
+      
+      // === Updated Excel Parser with New Regex Rule and no data separation ===
       function parseExcel(file) {
          return new Promise((resolve, reject) => {
           const fileReader = new FileReader();
           fileReader.onload = function(e) {
             try {
-              setLoadingMessage(`Parsing Excel: ${file.name}...`); // Update status
+              setLoadingMessage(`Parsing Excel: ${file.name}...`);
               const data = new Uint8Array(e.target.result);
               const workbook = XLSX.read(data, { type: 'array' });
               const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-              const devices = []; let row = 7;
+              const devices = [];
+              let row = 7;
               while (true) {
-                const cellB = worksheet["B" + row]; if (!cellB || !cellB.v) break;
-                let deviceText = ""; ["B", "C", "D", "E", "F", "G"].forEach(col => { const cell = worksheet[col + row]; if (cell?.v) deviceText += cell.v + " "; });
-                 if (deviceText.trim()) { // Only add if row has content
+                const cellB = worksheet["B" + row];
+                if (!cellB || !cellB.v) break;
+                let deviceText = "";
+                ["B", "C", "D", "E", "F", "G"].forEach(col => {
+                  const cell = worksheet[col + row];
+                  if (cell && cell.v) {
+                    deviceText += cell.v + " ";
+                  }
+                });
+                deviceText = deviceText.trim();
+                if (deviceText) {
+                  // Regex that ensures the row starts with the device address and ends with a 10-digit serial.
+                  const regex = /^(\d{3}:\d{3}:\d{4})\s+(.+)\s+(\d{10})$/;
+                  const match = deviceText.match(regex);
+                  if (match) {
+                    // Instead of splitting the data, we store the entire matched string
                     devices.push({
-                       text: deviceText.trim(),
-                       deviceNumber: deviceText.match(/^(\d+)\b/)?.[1] || "",
-                       description: cleanDeviceDescription(deviceText.replace(/^(\d+)\b\s*/, '')),
-                       serialNumber: "", raw: deviceText.trim(), checked: false
+                      text: match[0],
+                      raw: match[0],
+                      checked: false,
+                      fromExcel: true
                     });
-                 }
+                  }
+                }
                 row++;
               }
-               setLoadingMessage(`Extracted devices from ${file.name}...`); // Update status
-              resolve({ header: `Excel Data: ${file.name}`, devices }); // CORE RETURN
+              setLoadingMessage(`Extracted devices from ${file.name}...`);
+              resolve({ header: `Excel Data: ${file.name}`, devices });
             } catch (excelError) { reject(`Excel parsing failed: ${excelError.message}`); }
           };
           fileReader.onerror = () => reject(`Failed to read file: ${file.name}`);
           fileReader.readAsArrayBuffer(file);
          });
       }
-       /**
-        * Handles the processing of uploaded files (PDF or Excel). Includes button disabling.
-        */
-       async function handleFileUpload(files, parserFn, fileTypeDesc) {
+      
+      async function handleFileUpload(files, parserFn, fileTypeDesc) {
            if (!files || files.length === 0) { alert(`Please select at least one valid ${fileTypeDesc} file.`); return; }
-
-           // Disable buttons during processing
            pdfInputEl.disabled = true;
            excelInputEl.disabled = true;
            importFileBtnEl.disabled = true;
            setLoadingMessage(`Processing ${files.length} ${fileTypeDesc} file(s)...`);
-
            const parsePromises = Array.from(files).map(file =>
                parserFn(file).catch(err => ({ error: true, message: err, fileName: file.name }))
            );
-
            const results = await Promise.all(parsePromises);
            let newDevicesAdded = 0;
            let errorsEncountered = [];
-           let firstNewHeader = ""; // Store the first encountered header
-
-           setLoadingMessage("Merging data..."); // Update status
-
+           let firstNewHeader = "";
+           setLoadingMessage("Merging data...");
            results.forEach(result => {
                if (result.error) {
                    errorsEncountered.push(`Failed: ${result.fileName} (${result.message})`);
                } else if (result?.devices) {
-                    if (!firstNewHeader && result.header) firstNewHeader = result.header; // Capture first header
-
-                   const currentDeviceKeys = new Set(deviceChecklistData.devices.map(d => d.serialNumber ? `${d.description}_${d.serialNumber}` : d.raw));
+                    if (!firstNewHeader && result.header) firstNewHeader = result.header;
+                   const currentDeviceKeys = new Set(deviceChecklistData.devices.map(d => d.raw));
                    result.devices.forEach(newDevice => {
-                       const key = newDevice.serialNumber ? `${newDevice.description}_${newDevice.serialNumber}` : newDevice.raw;
+                       const key = newDevice.raw;
                        if (!currentDeviceKeys.has(key)) {
-                           newDevice.checked = newDevice.checked || false; // Ensure checked exists
+                           newDevice.checked = newDevice.checked || false;
                            deviceChecklistData.devices.push(newDevice);
                            currentDeviceKeys.add(key);
                            newDevicesAdded++;
@@ -771,13 +721,9 @@
                    });
                }
            });
-
-           // Update header only if the current one is empty or default, and a new one was found
            if ((!deviceChecklistData.header || deviceChecklistData.header === "No project information loaded.") && firstNewHeader) {
                 deviceChecklistData.header = firstNewHeader;
            }
-
-
            if (newDevicesAdded > 0) {
                saveSession();
                displayHeader(deviceChecklistData.header);
@@ -786,26 +732,18 @@
            } else if (errorsEncountered.length === 0) {
                setLoadingMessage("No new unique devices found in the selected file(s).");
            }
-
            if (errorsEncountered.length > 0) {
                alert("Some files could not be processed:\n- " + errorsEncountered.join("\n- "));
-               setLoadingMessage("Error processing one or more files.", true); // Show error state
+               setLoadingMessage("Error processing one or more files.", true);
            }
-
-           // Clear input values *after* processing
            if (parserFn === parsePDF) pdfInputEl.value = '';
            if (parserFn === parseExcel) excelInputEl.value = '';
-
-           // Re-enable buttons
            pdfInputEl.disabled = false;
            excelInputEl.disabled = false;
            importFileBtnEl.disabled = false;
-
-           // Clear success/info message after a delay
            setTimeout(() => { if (!loadingEl.classList.contains('error')) setLoadingMessage(""); }, 4000);
        }
 
-      // === Import/Export Functions ===
       function exportListToFile() {
          if (!deviceChecklistData?.devices?.length) { alert("No device data to export."); return; }
          try {
@@ -817,7 +755,9 @@
             const filenameBase = (deviceChecklistData.header || 'device-checklist').replace(/[^a-z0-9]/gi, '_').toLowerCase();
             const dateStr = new Date().toISOString().slice(0, 10);
             link.download = `${filenameBase}_${dateStr}.json`;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             URL.revokeObjectURL(url);
          } catch (e) { setLoadingMessage("Export failed.", true); }
       }
@@ -825,12 +765,14 @@
          const file = e.target.files[0];
          if (!file) return;
          if (!file.name.toLowerCase().endsWith('.json') || file.type !== 'application/json') {
-            alert("Please select a valid .json file."); fileImportInputEl.value = ''; return;
+            alert("Please select a valid .json file.");
+            fileImportInputEl.value = '';
+            return;
          }
-
-         pdfInputEl.disabled = true; excelInputEl.disabled = true; importFileBtnEl.disabled = true; // Disable buttons
+         pdfInputEl.disabled = true;
+         excelInputEl.disabled = true;
+         importFileBtnEl.disabled = true;
          setLoadingMessage(`Importing ${file.name}...`);
-
          const reader = new FileReader();
          reader.onload = (evt) => {
             try {
@@ -839,8 +781,11 @@
                   throw new Error("Invalid JSON structure.");
                }
                 if (!confirm(`Replace current checklist (${deviceChecklistData.devices.length} devices) with data from "${file.name}"?`)) {
-                   fileImportInputEl.value = ''; setLoadingMessage("");
-                   pdfInputEl.disabled = false; excelInputEl.disabled = false; importFileBtnEl.disabled = false; // Re-enable
+                   fileImportInputEl.value = '';
+                   setLoadingMessage("");
+                   pdfInputEl.disabled = false;
+                   excelInputEl.disabled = false;
+                   importFileBtnEl.disabled = false;
                    return;
                 }
                deviceChecklistData = importedData;
@@ -855,18 +800,21 @@
             } finally {
                fileImportInputEl.value = '';
                setTimeout(() => { if (!loadingEl.classList.contains('error')) setLoadingMessage(""); }, 4000);
-               pdfInputEl.disabled = false; excelInputEl.disabled = false; importFileBtnEl.disabled = false; // Re-enable
+               pdfInputEl.disabled = false;
+               excelInputEl.disabled = false;
+               importFileBtnEl.disabled = false;
             }
          };
          reader.onerror = () => {
             setLoadingMessage("Failed to read the selected file.", true);
             fileImportInputEl.value = '';
-            pdfInputEl.disabled = false; excelInputEl.disabled = false; importFileBtnEl.disabled = false; // Re-enable
+            pdfInputEl.disabled = false;
+            excelInputEl.disabled = false;
+            importFileBtnEl.disabled = false;
          };
          reader.readAsText(file);
       });
 
-      // === Event Listeners Setup ===
       undoLastBtnEl.addEventListener("click", () => {
          if (undoStack.length === 0) return;
          const lastAction = undoStack.pop();
@@ -874,25 +822,23 @@
             deviceChecklistData.devices[lastAction.index].checked = lastAction.oldValue;
          }
          saveSession();
-         displayDevices(); // Re-render
+         displayDevices();
       });
 
       advancedToolsBtnEl.addEventListener('click', (e) => {
          e.stopPropagation();
          const isOpen = advancedToolsDropdownEl.classList.toggle('open');
          advancedToolsBtnEl.setAttribute('aria-expanded', isOpen.toString());
-         if (!isOpen) advancedToolsBtnEl.focus(); // Return focus when closing
+         if (!isOpen) advancedToolsBtnEl.focus();
       });
 
-      // Close dropdown with Escape key
       advancedToolsDropdownEl.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') {
               advancedToolsDropdownEl.classList.remove('open');
               advancedToolsBtnEl.setAttribute('aria-expanded', 'false');
-              advancedToolsBtnEl.focus(); // Return focus
+              advancedToolsBtnEl.focus();
           }
       });
-
 
       markAllBtnEl.addEventListener("click", () => {
          const changedIndices = [];
@@ -904,7 +850,9 @@
             }
          });
          if(changedIndices.length > 0) { saveSession(); displayDevices(); }
-         advancedToolsDropdownEl.classList.remove('open'); advancedToolsBtnEl.setAttribute('aria-expanded', 'false'); advancedToolsBtnEl.focus();
+         advancedToolsDropdownEl.classList.remove('open');
+         advancedToolsBtnEl.setAttribute('aria-expanded', 'false');
+         advancedToolsBtnEl.focus();
       });
 
       clearAllBtnEl.addEventListener("click", () => {
@@ -917,17 +865,20 @@
             }
          });
          if(changedIndices.length > 0) { saveSession(); displayDevices(); }
-         advancedToolsDropdownEl.classList.remove('open'); advancedToolsBtnEl.setAttribute('aria-expanded', 'false'); advancedToolsBtnEl.focus();
+         advancedToolsDropdownEl.classList.remove('open');
+         advancedToolsBtnEl.setAttribute('aria-expanded', 'false');
+         advancedToolsBtnEl.focus();
       });
 
       clearSessionBtnEl.addEventListener("click", () => {
-         // More specific confirmation message
          if (confirm(`Clear all ${deviceChecklistData.devices.length} devices and project info? This cannot be undone.`)) {
             clearSession();
             displayHeader("");
-            displayDevices(); // Will show empty state
+            displayDevices();
          }
-         advancedToolsDropdownEl.classList.remove('open'); advancedToolsBtnEl.setAttribute('aria-expanded', 'false'); advancedToolsBtnEl.focus();
+         advancedToolsDropdownEl.classList.remove('open');
+         advancedToolsBtnEl.setAttribute('aria-expanded', 'false');
+         advancedToolsBtnEl.focus();
       });
 
       toggleHideCompletedEl.addEventListener("change", (e) => {
@@ -935,7 +886,6 @@
          displayDevices();
       });
 
-      // Use debounced display for search input
       searchInputEl.addEventListener("input", debouncedDisplayDevices);
 
       pdfInputEl.addEventListener("change", (e) => handleFileUpload(e.target.files, parsePDF, "PDF"));
@@ -946,42 +896,32 @@
       window.addEventListener("scroll", () => {
          backToTopBtnEl.style.display = (document.documentElement.scrollTop > 400 || document.body.scrollTop > 400) ? "block" : "none";
       });
-      backToTopBtnEl.addEventListener("click", () => { window.scrollTo({ top: 0 /* behavior: smooth defined in CSS */ }); });
+      backToTopBtnEl.addEventListener("click", () => { window.scrollTo({ top: 0 }); });
 
       window.addEventListener('click', (e) => {
          if (!advancedToolsDropdownEl.contains(e.target) && e.target !== advancedToolsBtnEl && advancedToolsDropdownEl.classList.contains('open')) {
             advancedToolsDropdownEl.classList.remove('open');
             advancedToolsBtnEl.setAttribute('aria-expanded', 'false');
-            // Optionally return focus: advancedToolsBtnEl.focus(); (Consider UX implications)
          }
       });
 
-      // === Initial Load ===
       if (loadSession()) {
          console.log("Session loaded.");
          displayHeader(deviceChecklistData.header);
-         // Initial display happens here
       } else {
          console.log("No session found.");
-         // Initial display needed even if no session
       }
-      // Always display devices on initial load (handles empty/loaded state)
       displayDevices();
 
-
-      // === Service Worker Registration (PWA - UNCHANGED as requested) ===
       if ('serviceWorker' in navigator) {
-         window.addEventListener('load', () => { // Ensure SW registration happens after page load
-            navigator.serviceWorker.register('./serviceworker.js') // Use relative path
+         window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./serviceworker.js')
                .then(reg => console.log('ServiceWorker registered. Scope:', reg.scope))
                .catch(err => console.error('ServiceWorker registration failed:', err));
          });
       }
 
-    }); // End DOMContentLoaded listener
-  </script>
-</body>
-</html>
+    });
   </script>
 </body>
 </html>
